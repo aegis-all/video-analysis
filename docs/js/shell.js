@@ -4,6 +4,10 @@
    Flask の base.html が受け持っていたところ。
    ============================================================ */
 
+/* 名前を外に出さない。app.js にも toast などがあり、
+   同じ名前が2つあると読み込み時に丸ごと止まってしまう。 */
+(function () {
+
 const NAV = [
   ['index.html', '案件'],
   ['board.html', '進捗ボード'],
@@ -200,3 +204,5 @@ function colorMap(values, offset) {
 window.Shell = {
   mountShell, toast, escapeHtml, mmss, hhmm, stamp, colorMap,
 };
+
+}());

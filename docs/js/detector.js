@@ -9,6 +9,10 @@
    動かしてコマを取り出す。
    ============================================================ */
 
+/* 名前を外に出さない。app.js にも toast などがあり、
+   同じ名前が2つあると読み込み時に丸ごと止まってしまう。 */
+(function () {
+
 const DEFAULTS = {
   sensitivity: 0.30,
   telopSensitivity: 0.10,
@@ -408,3 +412,5 @@ function seekTo(video, time) {
 
 
 window.VideoDetector = { detectShots: detectShots, DEFAULTS: DEFAULTS };
+
+}());

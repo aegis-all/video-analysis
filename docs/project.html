@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>案件 — 動画分析</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<main>
+<div class="project" id="project-root">
+
+
+  <!-- ========================================================
+       案件情報（中身は project.js が入れる）
+       ======================================================== -->
+
+  <section class="project-info-card" id="info-card" hidden></section>
+
+
+  <!-- ========================================================
+       バージョン
+       ======================================================== -->
+
+  <div class="version-steps-wrap" id="version-wrap" hidden>
+    <nav class="version-steps" id="version-steps"></nav>
+  </div>
+
+
+  <!-- ========================================================
+       動画がまだ無い案件
+       ======================================================== -->
+
+  <details class="no-video" id="no-video" hidden>
+    <summary>
+      <span class="no-video-badge">動画なし</span>
+      動画を追加する
+    </summary>
+    <div class="no-video-body">
+      <p class="muted">
+        いまは動画がありません。作ってから追加することもできます。
+      </p>
+    </div>
+  </details>
+
+
+  <!-- ========================================================
+       動画
+       ======================================================== -->
+
+  <div class="player-wrap" id="player-wrap" data-mode="float" hidden>
+
+    <div class="player-bar" id="player-bar">
+      <span class="player-bar-title" id="player-bar-title"></span>
+      <span class="player-bar-actions">
+        <button type="button" id="player-min" class="player-bar-btn"
+                title="最小化" aria-label="最小化">−</button>
+        <button type="button" id="player-restore" class="player-bar-btn"
+                title="元の大きさに戻す" aria-label="元の大きさに戻す">⤢</button>
+        <button type="button" id="player-hide" class="player-bar-btn"
+                title="非表示" aria-label="非表示">✕</button>
+      </span>
+    </div>
+
+    <div class="player-stage">
+
+      <video id="player" controls preload="metadata" crossorigin="anonymous"></video>
+
+      <button type="button" id="capture-shot" class="capture-shot"
+              title="いま見えている場面を、秒数の順に差し込みます">
+        <span class="capture-icon" aria-hidden="true"></span>
+        <span class="capture-label">この場面を追加</span>
+      </button>
+
+    </div>
+
+    <div class="player-meta">
+      <span id="cur-time">00:00</span>
+      /
+      <span id="dur-time">--:--</span>
+      <span class="muted file" id="player-file"></span>
+
+      <div class="player-size">
+        <label for="player-size-slider">
+          サイズ <span id="player-size-label">65</span>%
+        </label>
+        <input type="range" id="player-size-slider" min="20" max="100"
+               step="5" value="65" aria-label="動画プレイヤーの大きさ">
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ========================================================
+       選んだ行の操作
+       ======================================================== -->
+
+  <div class="row-delete-bar" id="row-delete-bar">
+    <span class="row-delete-text">
+      <strong id="row-delete-count">0</strong> 行選択
+    </span>
+    <button type="button" class="row-delete-run" id="row-delete-run"
+            title="選択した行とスクリーンショットを削除します">削除</button>
+    <button type="button" class="row-delete-clear" id="row-delete-clear">解除</button>
+  </div>
+
+  <div class="row-undo" id="row-undo" hidden>
+    <span class="row-undo-text"></span>
+    <button type="button" class="row-undo-button">元に戻す</button>
+  </div>
+
+
+  <!-- ========================================================
+       レビュー表
+       ======================================================== -->
+
+  <div class="table-wrap">
+
+    <table class="sheet">
+
+      <thead>
+        <tr>
+          <th class="c-num">#
+            <span class="col-grip" data-col="0" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <th class="reference-group c-shot">参考動画キャプチャ
+            <span class="col-grip" data-col="1" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <th class="reference-group c-time">秒数
+            <span class="col-grip" data-col="2" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <th class="reference-group">役割
+            <span class="col-grip" data-col="3" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <th class="reference-group">素材の特徴
+            <span class="col-grip" data-col="4" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <th class="reference-group">備考・改善案
+            <span class="col-grip" data-col="5" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <th class="reference-group">フィードバックメモ
+            <span class="col-grip" data-col="6" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+
+          <th class="result-group result-start">
+            <span class="th-label">テキスト</span>
+            <span class="th-total" id="text-total"
+                  title="テキスト列の全文字数から算出した想定尺（5.5文字＝1秒）">
+              合計: <strong>0.0</strong>秒
+            </span>
+            <span class="col-grip" data-col="7" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+
+          <th class="result-group material-cell">素材
+            <span class="col-grip" data-col="8" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <th class="result-group">役割
+            <span class="col-grip" data-col="9" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <th class="result-group">シーン後の気持ち
+            <span class="col-grip" data-col="10" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <th class="result-group">フィードバックメモ
+            <span class="col-grip" data-col="11" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+        </tr>
+      </thead>
+
+      <tbody id="rows"></tbody>
+
+    </table>
+
+    <p class="muted pad" id="no-rows" hidden>スクリーンショットがありません。</p>
+
+    <div class="row-add-wrap">
+      <button type="button" class="row-add" id="row-add"
+              title="行を1つ追加します" aria-label="行を追加">＋</button>
+    </div>
+
+  </div>
+
+</div>
+</main>
+
+<div id="lightbox" class="lightbox" hidden>
+  <button type="button" id="lightbox-close" class="lightbox-close"
+          aria-label="閉じる" title="閉じる（Esc）">×</button>
+  <img id="lightbox-img" alt="">
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/api.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/shim.js"></script>
+<script src="js/project.js"></script>
+
+</body>
+</html>

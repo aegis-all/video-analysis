@@ -7,6 +7,10 @@
    ここでは「ログインしていること」だけを前提にしてよい。
    ============================================================ */
 
+/* 名前を外に出さない。app.js にも toast などがあり、
+   同じ名前が2つあると読み込み時に丸ごと止まってしまう。 */
+(function () {
+
 const db = window.supabase.createClient(
   window.APP_CONFIG.supabaseUrl,
   window.APP_CONFIG.supabaseAnonKey,
@@ -425,3 +429,5 @@ const Guidelines = {
 window.API = {
   db, Auth, Projects, Videos, Shots, Files, WorkTime, Settings, Guidelines,
 };
+
+}());
