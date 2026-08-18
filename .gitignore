@@ -9,6 +9,10 @@
 
 data/
 
+# 接続情報。絶対に上げない
+.env
+.env.*
+
 # Python
 __pycache__/
 *.py[cod]
