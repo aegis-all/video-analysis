@@ -109,9 +109,58 @@ class Supabase:
             extra={"x-upsert": "true"},
         )
 
+    def delete_all(self, table: str) -> None:
+        key = "key" if table == "settings" else "id"
+        op = "neq.__none__" if key == "key" else "gt.0"
+        self._request("DELETE", f"/rest/v1/{table}?{key}={op}")
+
     def list_users(self) -> list:
         out = self._request("GET", "/auth/v1/admin/users?per_page=200")
         return (out or {}).get("users", []) if isinstance(out, dict) else (out or [])
+
+
+def shrink_video(src: Path, limit_mb: int, work: Path) -> Path:
+    """
+    大きすぎる動画を、送れる大きさに圧縮した複製を作る。
+
+    Supabase の無料プランは1ファイル 50MB まで。
+    元のファイルには手を触れず、別の場所に作る。
+    """
+    import shutil
+    import subprocess
+
+    if src.stat().st_size <= limit_mb * 1048576:
+        return src
+
+    if shutil.which("ffmpeg") is None:
+        raise RuntimeError(
+            f"{src.name} は {src.stat().st_size / 1048576:.0f}MB あり、"
+            "そのままでは送れません。ffmpeg を入れるか --skip-videos を付けてください。"
+        )
+
+    work.mkdir(parents=True, exist_ok=True)
+    out = work / (src.stem + "-web.mp4")
+
+    if out.is_file() and out.stat().st_size <= limit_mb * 1048576:
+        return out
+
+    print(f"    {src.stat().st_size / 1048576:.0f}MB あるので圧縮します …", flush=True)
+
+    subprocess.run(
+        ["ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i", str(src),
+         "-c:v", "libx264", "-preset", "medium", "-crf", "24",
+         "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+         "-c:a", "aac", "-b:a", "128k", str(out)],
+        check=True,
+    )
+
+    size = out.stat().st_size / 1048576
+    print(f"    → {size:.0f}MB になりました")
+
+    if size > limit_mb:
+        raise RuntimeError(f"{src.name} は圧縮しても {size:.0f}MB で送れません。")
+
+    return out
 
 
 def rows(conn, sql: str) -> list:
@@ -155,6 +204,10 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="移す量を見るだけ")
     ap.add_argument("--skip-videos", action="store_true",
                     help="動画は移さない（スクショと入力内容だけ）")
+    ap.add_argument("--reset", action="store_true",
+                    help="Supabase 側を空にしてから入れ直す")
+    ap.add_argument("--max-upload-mb", type=int, default=45,
+                    help="これを超える動画は圧縮してから送る（既定 45MB）")
     args = ap.parse_args()
 
     if not DB_PATH.is_file():
@@ -175,6 +228,14 @@ def main() -> int:
         return 1
 
     sb = Supabase(env["SUPABASE_URL"], env["SUPABASE_SERVICE_KEY"])
+
+    if args.reset:
+        print("― 入れ直しのため、Supabase 側を空にします ―")
+        # 親を消せば、ぶら下がっている行も一緒に消える
+        for table in ("work_time", "guidelines", "settings", "projects"):
+            sb.delete_all(table)
+            print(f"  {table} を空にしました")
+        print()
 
     # ---- ユーザーの対応表 -------------------------------------------------
     print("― ユーザーの対応づけ ―")
@@ -230,10 +291,12 @@ def main() -> int:
         storage_path = ""
 
         if src and src.is_file() and not args.skip_videos:
-            storage_path = f"{project_map[v['project_id']]}/{src.name}"
-            size = src.stat().st_size / 1048576
-            print(f"  送信中 {src.name} ({size:.0f}MB) …", flush=True)
-            sb.upload("videos", storage_path, src.read_bytes())
+            send = shrink_video(src, args.max_upload_mb,
+                                BASE_DIR / "data" / "_upload")
+            storage_path = f"{project_map[v['project_id']]}/{send.name}"
+            size = send.stat().st_size / 1048576
+            print(f"  送信中 {send.name} ({size:.0f}MB) …", flush=True)
+            sb.upload("videos", storage_path, send.read_bytes())
 
         body = {
             "project_id": project_map[v["project_id"]],
