@@ -242,7 +242,13 @@
       + cell('material_feature', '素材の特徴')
       + cell('improvement_note', '備考・改善案')
       + cell('reference_feedback', 'フィードバックメモ')
-      + cell('text_raw', 'テキスト', 'result-start')
+      /* テキストだけを別の行へ移せるよう、つかむところを付ける */
+      + '<td class="result-start c-text">'
+      + '<textarea data-shot="' + s.id + '" data-field="text_raw" rows="3"'
+      + ' placeholder="テキスト">' + Shell.escapeHtml(s.text_raw || '') + '</textarea>'
+      + '<span class="text-move" title="つかんで動かすと、テキストだけが行を移ります"'
+      + ' aria-label="テキストを別の行へ移す">⠿</span>'
+      + '</td>'
 
       + '<td class="material-cell">'
       + '<div class="material-editor" contenteditable="true" data-shot="' + s.id + '"'

@@ -821,7 +821,7 @@
 
           <!-- 自分の動画：テキスト -->
 
-          <td class="result-start">
+          <td class="result-start c-text">
 
             <textarea
               data-shot="{{ s.id }}"
@@ -829,6 +829,13 @@
               rows="3"
               placeholder="テキスト"
             >{{ s.text_raw }}</textarea>
+
+            <!-- ここをつかむと、この欄の中身だけを別の行へ移せる -->
+            <span
+              class="text-move"
+              title="つかんで動かすと、テキストだけが行を移ります"
+              aria-label="テキストを別の行へ移す"
+            >⠿</span>
 
           </td>
 

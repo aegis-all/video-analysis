@@ -5344,3 +5344,64 @@ button.row-insert,
     border-color: #2f6df6;
     color: #ffffff;
 }
+
+/* =========================================================
+   テキスト列だけを行間で動かす
+   ========================================================= */
+
+.c-text {
+    position: relative;
+}
+
+.text-move {
+    position: absolute;
+    right: 6px;
+    top: 4px;
+    z-index: 5;
+
+    font-size: 11px;
+    line-height: 1;
+    color: #c3ccd8;
+
+    cursor: grab;
+    user-select: none;
+
+    opacity: 0;
+    transition: opacity 0.12s, color 0.12s;
+}
+
+/* その行に近づいたときだけ出す */
+.sheet tbody tr:hover .text-move {
+    opacity: 1;
+}
+
+.text-move:hover {
+    color: #0f9f8f;
+}
+
+.c-text.is-moving textarea {
+    opacity: 0.4;
+}
+
+.c-text.is-moving .text-move {
+    cursor: grabbing;
+}
+
+/* 落とす先 */
+.c-text.is-target textarea {
+    border-color: #0f9f8f;
+    box-shadow: 0 0 0 3px rgba(15, 159, 143, 0.18);
+}
+
+.c-text.is-landed textarea {
+    animation: textLanded 1.2s ease-out;
+}
+
+@keyframes textLanded {
+    from {
+        background: #dff5f0;
+    }
+    to {
+        background: inherit;
+    }
+}

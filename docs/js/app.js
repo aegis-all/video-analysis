@@ -107,6 +107,8 @@ if (root) {
 
   initRowTools();
 
+  initTextMove();
+
   initLightbox();
 
   initPolling();
@@ -4880,5 +4882,172 @@ function initRowTools() {
       const box = tr.querySelector('.row-seq');
       if (box) { box.textContent = String(i + 1); }
     });
+  }
+}
+
+
+/* ============================================================
+   テキスト列だけを行間で動かす
+
+   スクショや他の欄はそのままで、「テキスト」の中身だけを
+   別の行へ移す。場面を1つ足し引きしたときに、テキストだけを
+   1行ずつずらして合わせ直す、という使い方のため。
+
+   動かし方は行の移動と同じ考え方で、抜いて差し込む。
+   3行目を7行目へ動かすと、4〜7行目のテキストが1つずつ上へ繰り上がる。
+   ============================================================ */
+
+function initTextMove() {
+
+  const tbody = document.getElementById('rows');
+
+  if (!tbody) {
+    return;
+  }
+
+  let fromRow = null;
+
+  tbody.addEventListener('mousedown', function (e) {
+
+    const grip = e.target.closest('.text-move');
+
+    /* つかむところ以外からは動かさない。
+       欄の中の文字を選びたいだけのときに動くと邪魔になる。 */
+    tbody.querySelectorAll('.c-text').forEach(function (cell) {
+      cell.draggable = !!grip && cell.contains(grip);
+    });
+  });
+
+  tbody.addEventListener('dragstart', function (e) {
+
+    const cell = e.target.closest('.c-text');
+
+    if (!cell || !cell.draggable) {
+      return;
+    }
+
+    /* 行ごと動かす仕掛けが同時に走らないよう、ここで止める */
+    e.stopPropagation();
+
+    fromRow = cell.closest('tr');
+    cell.classList.add('is-moving');
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', 'text-cell');
+  });
+
+  tbody.addEventListener('dragover', function (e) {
+
+    if (!fromRow) {
+      return;
+    }
+
+    const cell = e.target.closest('.c-text');
+
+    if (!cell) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    tbody.querySelectorAll('.c-text.is-target').forEach(function (c) {
+      c.classList.remove('is-target');
+    });
+
+    if (cell.closest('tr') !== fromRow) {
+      cell.classList.add('is-target');
+    }
+  });
+
+  tbody.addEventListener('drop', function (e) {
+
+    if (!fromRow) {
+      return;
+    }
+
+    const cell = e.target.closest('.c-text');
+
+    if (!cell) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    move(fromRow, cell.closest('tr'));
+  });
+
+  tbody.addEventListener('dragend', function () {
+
+    tbody.querySelectorAll('.c-text').forEach(function (cell) {
+      cell.draggable = false;
+      cell.classList.remove('is-moving', 'is-target');
+    });
+
+    fromRow = null;
+  });
+
+
+  /** 抜いて差し込み、間の行を1つずつずらす */
+  function move(from, to) {
+
+    if (!from || !to || from === to) {
+      return;
+    }
+
+    const rows = [].slice.call(tbody.querySelectorAll('tr[data-shot-row]'));
+
+    const a = rows.indexOf(from);
+    const b = rows.indexOf(to);
+
+    if (a < 0 || b < 0) {
+      return;
+    }
+
+    const boxes = rows.map(function (r) {
+      return r.querySelector('[data-field="text_raw"]');
+    });
+
+    if (boxes.some(function (x) { return !x; })) {
+      return;
+    }
+
+    const before = boxes.map(function (x) { return x.value; });
+
+    const after = before.slice();
+    const picked = after.splice(a, 1)[0];
+    after.splice(b, 0, picked);
+
+    /* 変わった行だけを書き戻す */
+    const changed = [];
+
+    after.forEach(function (value, i) {
+      if (value !== before[i]) {
+        boxes[i].value = value;
+        changed.push(boxes[i]);
+      }
+    });
+
+    if (!changed.length) {
+      return;
+    }
+
+    changed.forEach(function (box) {
+      /* input を出すと、高さの調整も自動保存の仕掛けも動く。
+         autoGrow は initAutoSave の中だけの関数なので直接は呼べない。 */
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      saveField(box);
+    });
+
+    recountTextTotal();
+
+    /* 動かした先が分かるように、少しだけ色を付ける */
+    const landed = boxes[b].closest('.c-text');
+    landed.classList.add('is-landed');
+    setTimeout(function () { landed.classList.remove('is-landed'); }, 1200);
+
+    toast('テキストを ' + (a + 1) + ' 行目から ' + (b + 1) + ' 行目へ移しました');
   }
 }
