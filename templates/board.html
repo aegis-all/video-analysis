@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}進捗ボード — 動画分析{% endblock %}
+
+
+{% block content %}
+
+<div class="page page-wide board-page">
+
+
+  <!-- ========================================================
+       月間目標
+       ======================================================== -->
+
+  <section class="card goal-card">
+
+    <div class="goal-head">
+
+      <div>
+        <h2>月間目標</h2>
+        <p class="new-project-lead">
+          {{ goal.month[:4] }}年{{ goal.month[5:7] }}月に「完全にdone」へ入れた件数です。
+        </p>
+      </div>
+
+      <details class="goal-edit">
+
+        <summary>目標を変える</summary>
+
+        <form class="goal-form" id="goal-form">
+
+          <label>
+            <span>1か月の完成目標</span>
+            <input type="number" name="monthly_target" min="0" max="999"
+                   value="{{ settings.monthly_target }}"> 件
+          </label>
+
+          <label>
+            <span>分析の目標時間</span>
+            <input type="number" name="target_analysis_h" min="0" max="99" step="0.1"
+                   value="{{ (settings.target_analysis / 3600)|round(1) }}"> 時間
+          </label>
+
+          <label>
+            <span>転用の目標時間</span>
+            <input type="number" name="target_reuse_h" min="0" max="99" step="0.1"
+                   value="{{ (settings.target_reuse / 3600)|round(1) }}"> 時間
+          </label>
+
+          <button type="submit" class="primary">保存する</button>
+
+        </form>
+
+      </details>
+
+    </div>
+
+    <div class="goal-bar-row">
+
+      <div class="goal-figure">
+        <b>{{ goal.done }}</b> / {{ goal.target }} 件
+        <span class="goal-rate">{{ goal.rate }}%</span>
+      </div>
+
+      <div class="goal-bar">
+        <span class="goal-fill" style="width: {{ goal.rate }}%"></span>
+      </div>
+
+      <div class="goal-left">
+        {% if goal.left %}あと {{ goal.left }} 件{% else %}達成 ✓{% endif %}
+      </div>
+
+    </div>
+
+    <div class="stat-row">
+
+      <div class="stat">
+        <div class="stat-label">案件の数</div>
+        <div class="stat-value">{{ counts.total }}</div>
+        <div class="stat-note">うち手つかず {{ counts.todo }} 件</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">かかえている数</div>
+        <div class="stat-value">{{ counts.open }}</div>
+        <div class="stat-note">
+          進行中 {{ counts.doing }} ／ FB待ち {{ counts.waiting }}
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">1案件あたりの平均</div>
+        <div class="stat-value">{{ hhmm(summary.avg_total) }}</div>
+        <div class="stat-note">
+          分析 {{ hhmm(summary.avg_analysis) }} ／ 転用 {{ hhmm(summary.avg_reuse) }}
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">done になった案件の平均</div>
+        <div class="stat-value">{{ hhmm(summary.avg_done_total) }}</div>
+        <div class="stat-note">{{ summary.done_count }} 件の平均</div>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ========================================================
+       ボード
+       ======================================================== -->
+
+  <div class="board-title">
+    <h2>タスクボード</h2>
+    <span class="muted">カードをつかんで別の列に落とすと、状態が変わります。</span>
+  </div>
+
+  <div class="board" id="board">
+
+    {% for col in columns %}
+
+    <section
+      class="board-col"
+      data-status="{{ col.key }}"
+    >
+
+      <header class="board-col-head">
+
+        <span class="board-col-title">{{ col.label }}</span>
+
+        <span class="board-col-count">{{ col.cards|length }}</span>
+
+      </header>
+
+      <div class="board-drop" data-drop>
+
+        {% for c in col.cards %}
+
+        <article
+          class="board-card"
+          draggable="true"
+          data-id="{{ c.row.id }}"
+        >
+
+          <div class="board-card-top">
+
+            {% if c.row.genre %}
+            <span class="database-pill pill-c{{ genre_colors.get(c.row.genre, 0) }}">
+              {{ c.row.genre }}
+            </span>
+            {% endif %}
+
+            {% if c.row.assignee %}
+            <span class="database-pill pill-c{{ assignee_colors.get(c.row.assignee, 0) }}">
+              {{ c.row.assignee }}
+            </span>
+            {% endif %}
+
+          </div>
+
+          <a
+            class="board-card-name"
+            href="{{ url_for('project_page', key=c.row.slug or c.row.id) }}"
+          >
+            {{ c.row.name }}{% if c.row.project_no %}<span
+              class="board-card-no">{{ c.row.project_no }}</span>{% endif %}
+          </a>
+
+          <div class="board-card-times">
+
+            <span class="board-time board-time-analysis" title="分析にかけた時間">
+              分析 {{ hhmm(c.analysis) }}
+            </span>
+
+            <span class="board-time board-time-reuse" title="転用にかけた時間">
+              転用 {{ hhmm(c.reuse) }}
+            </span>
+
+          </div>
+
+        </article>
+
+        {% endfor %}
+
+        <p class="board-empty">ここにドラッグ</p>
+
+      </div>
+
+    </section>
+
+    {% endfor %}
+
+  </div>
+
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script src="{{ static_v('app.js') }}"></script>
+{% endblock %}

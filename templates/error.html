@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}エラー — 動画分析{% endblock %}
+
+{% block content %}
+<div class="page">
+  <section class="card">
+    <h2>エラー</h2>
+    <pre class="error-msg">{{ message }}</pre>
+    <p><a class="button" href="{{ back }}">戻る</a></p>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}ユーザー管理 — 動画分析{% endblock %}
+
+{% block topbar %}
+<div class="topbar-inner">
+  <a class="back" href="{{ url_for('index') }}">← 案件一覧</a>
+  <span class="project-name">ユーザー管理</span>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div class="page">
+
+  <section class="card">
+
+    <h2>ユーザー</h2>
+
+    {% if error %}<p class="auth-error">{{ error }}</p>{% endif %}
+    {% if notice %}<p class="auth-notice">{{ notice }}</p>{% endif %}
+
+    <table class="projects-table users-table">
+
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>表示名</th>
+          <th>2段階認証</th>
+          <th>最終ログイン</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for u in users %}
+        <tr>
+
+          <td>
+            <strong>{{ u.username }}</strong>
+            {% if u.id == me.id %}
+            <span class="database-pill pill-c7">自分</span>
+            {% endif %}
+          </td>
+
+          <td>
+            <form method="post" class="users-inline">
+              <input type="hidden" name="action" value="rename">
+              <input type="hidden" name="uid" value="{{ u.id }}">
+              <input
+                type="text"
+                name="display_name"
+                value="{{ u.display_name or u.username.split('@')[0] }}"
+                maxlength="40"
+                class="users-name"
+                aria-label="表示名"
+              >
+              <button type="submit">変更</button>
+            </form>
+          </td>
+
+          <td>
+            {% if u.totp_enabled %}
+            <span class="database-pill pill-c4">登録済み</span>
+            {% else %}
+            <span class="database-pill pill-c2">未登録</span>
+            {% endif %}
+          </td>
+
+          <td class="database-date">
+            {{ u.last_login_at or "—" }}
+          </td>
+
+          <td class="users-actions">
+
+            <details>
+              <summary>パスワード変更</summary>
+              <form method="post" class="users-inline">
+                <input type="hidden" name="action" value="password">
+                <input type="hidden" name="uid" value="{{ u.id }}">
+                <input type="password" name="password" placeholder="8文字以上"
+                       minlength="8" required autocomplete="new-password">
+                <button type="submit" class="primary">変更</button>
+              </form>
+            </details>
+
+            <form method="post" class="users-inline"
+                  onsubmit="return confirm('{{ u.username }} の2段階認証をリセットします。\n次回ログイン時に登録し直しになります。よろしいですか？')">
+              <input type="hidden" name="action" value="reset_totp">
+              <input type="hidden" name="uid" value="{{ u.id }}">
+              <button type="submit">2段階認証をリセット</button>
+            </form>
+
+            {% if u.id != me.id and users|length > 1 %}
+            <form method="post" class="users-inline"
+                  onsubmit="return confirm('{{ u.username }} を削除します。よろしいですか？')">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="uid" value="{{ u.id }}">
+              <button type="submit" class="danger">削除</button>
+            </form>
+            {% endif %}
+
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+
+  </section>
+
+
+  <section class="card">
+
+    <h2>ユーザーを追加</h2>
+
+    <p class="muted">
+      追加した人が最初にログインすると、
+      Google Authenticator の登録画面が自動で出ます。
+    </p>
+
+    <form method="post" class="upload-form">
+
+      <input type="hidden" name="action" value="add">
+
+      <div class="field">
+        <label for="new-username">ID</label>
+        <input type="text" id="new-username" name="username" required autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="new-display-name">表示名</label>
+        <input type="text" id="new-display-name" name="display_name"
+               maxlength="40" placeholder="山田（省略すると ID から作ります）"
+               autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="new-password">初期パスワード（8文字以上）</label>
+        <input type="password" id="new-password" name="password"
+               required minlength="8" autocomplete="new-password">
+      </div>
+
+      <button type="submit" class="primary">追加する</button>
+
+    </form>
+
+  </section>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ static_v('app.js') }}"></script>
+{% endblock %}

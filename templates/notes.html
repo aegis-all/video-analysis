@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}共通ノート — 動画分析{% endblock %}
+
+
+{% block content %}
+
+<div class="page notes-page">
+
+
+  <section class="card guideline-card">
+
+    <div class="guideline-head">
+
+      <div>
+        <h2>ガイドライン</h2>
+        <p class="new-project-lead">
+          下の共通フィードバックから「毎回これは守る」と決めたものです。
+        </p>
+      </div>
+
+      {% if ai_ready %}
+      <button type="button" class="ai-draft" id="ai-draft">
+        AI で文章にまとめる
+      </button>
+      {% endif %}
+
+    </div>
+
+    {% if guidelines %}
+    <ol class="guideline-list" id="guideline-list">
+      {% for g in guidelines %}
+      <li class="guideline-item" data-id="{{ g.id }}">
+        <span class="guideline-text">{{ g.text }}</span>
+        {% if g.seen %}
+        <span class="guideline-seen">{{ g.seen }}件から</span>
+        {% endif %}
+        <button type="button" class="guideline-drop" title="外す">×</button>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <p class="guideline-empty">
+      まだありません。下の一覧で「採用」を押すと、ここに積み上がります。
+    </p>
+    {% endif %}
+
+    <div class="ai-result" id="ai-result" hidden></div>
+
+  </section>
+
+
+  <section class="card">
+
+    <h2>共通ノート</h2>
+
+    <p class="new-project-lead">
+      担当者やジャンルに関係なく、すべての案件のフィードバックを集めて、
+      <b>複数の案件で同じことを書かれているもの</b>だけを並べています。
+      案件をまたいで繰り返し出てくる指摘＝毎回気をつけるべきことです。
+    </p>
+
+    <form method="get" class="notes-filter">
+
+      <div class="notes-filter-group">
+
+        <span class="notes-filter-label">集める欄</span>
+
+        {% for key, label in note_fields %}
+        <label class="notes-check">
+          <input
+            type="checkbox"
+            name="field"
+            value="{{ key }}"
+            {% if key in selected %}checked{% endif %}
+          >
+          <span>{{ label }}</span>
+        </label>
+        {% endfor %}
+
+      </div>
+
+      <div class="notes-filter-group">
+
+        <label class="notes-check" for="n">
+          <span class="notes-filter-label">何件以上に出てきたら</span>
+        </label>
+
+        <select name="n" id="n">
+          {% for i in range(2, 11) %}
+          <option value="{{ i }}" {% if threshold == i %}selected{% endif %}>
+            {{ i }}件以上
+          </option>
+          {% endfor %}
+        </select>
+
+        <button type="submit" class="primary notes-apply">この条件で見る</button>
+
+      </div>
+
+    </form>
+
+    <p class="notes-meta">
+      入力のある案件は全部で {{ project_total }} 件。
+      そのうち {{ threshold }} 件以上に出てくるものが
+      <b>{{ items|length }}</b> 件見つかりました。
+    </p>
+
+  </section>
+
+
+  {% if items %}
+
+  <section class="card">
+
+    <ol class="notes-list">
+
+      {% for item in items %}
+
+      <li class="note-item">
+
+        <div class="note-head">
+
+          <span class="note-count">{{ item.project_count }}件</span>
+
+          <p class="note-text">{{ item.text }}</p>
+
+          {% if item.text in already %}
+          <span class="note-adopted">採用済み</span>
+          {% else %}
+          <button
+            type="button"
+            class="note-adopt"
+            data-text="{{ item.text }}"
+            data-seen="{{ item.project_count }}"
+          >採用</button>
+          {% endif %}
+
+        </div>
+
+        <div class="note-foot">
+
+          {% for f in item.fields %}
+          <span class="note-field">{{ field_labels[f] }}</span>
+          {% endfor %}
+
+          <span class="note-projects">
+
+            {% for p in item.projects %}
+            <a href="{{ url_for('project_page', key=p.slug or p.id) }}">
+              {{ p.name }}{{ p.project_no or '' }}
+            </a>
+            {% endfor %}
+
+          </span>
+
+        </div>
+
+      </li>
+
+      {% endfor %}
+
+    </ol>
+
+  </section>
+
+  {% else %}
+
+  <section class="card">
+
+    <div class="database-no-projects">
+
+      <div class="database-no-projects-title">
+        まだ共通するものが見つかりません
+      </div>
+
+      <div class="muted">
+        同じ言い回しが {{ threshold }} 件以上の案件で使われると、ここに出ます。<br>
+        件数を減らすか、集める欄を増やしてみてください。
+      </div>
+
+    </div>
+
+  </section>
+
+  {% endif %}
+
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script src="{{ static_v('app.js') }}"></script>
+{% endblock %}

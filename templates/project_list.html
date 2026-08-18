@@ -1,0 +1,398 @@
+{#
+  ジャンル別 / 担当者別の案件一覧。
+
+  page_kind  … 'genre' か 'assignee'。今どちらで絞り込んでいるか。
+  page_value … そのジャンル名・担当者名。
+  自分自身の項目はフィルターに出さない（ジャンルページに
+  ジャンルフィルターがあっても意味がないため）。
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ page_value }} — 動画分析{% endblock %}
+
+
+{% block topbar %}
+<div class="topbar-inner">
+
+  <a
+    class="back"
+    href="{{ url_for('index') }}"
+  >
+    ← 案件一覧
+  </a>
+
+  <span class="project-name">
+    {% if page_kind == 'genre' %}ジャンル{% else %}担当者{% endif %}：{{ page_value }}
+  </span>
+
+</div>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page">
+
+  <section class="card projects-card">
+
+
+    <div class="database-header">
+
+      <div>
+
+        <h2>
+          <span class="database-pill pill-c{{ page_color }}">
+            {{ page_value }}
+          </span>
+          の案件
+        </h2>
+
+        <div
+          id="projects-count"
+          class="database-count"
+        >
+          {{ projects|length }}件
+        </div>
+
+      </div>
+
+
+      <button
+        type="button"
+        id="project-filter-clear"
+        class="database-clear"
+      >
+        条件をクリア
+      </button>
+
+    </div>
+
+
+    <!-- ======================================================
+         検索・絞り込み
+         ====================================================== -->
+
+    <div class="database-toolbar">
+
+      <div class="database-search">
+
+        <span
+          class="database-search-icon"
+          aria-hidden="true"
+        >
+          ⌕
+        </span>
+
+        <input
+          type="search"
+          id="project-search"
+          placeholder="案件名、案件番号{% if page_kind == 'genre' %}、担当者{% else %}、ジャンル{% endif %}を検索"
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <div class="database-toolbar-actions">
+
+        <button
+          type="button"
+          class="database-add-filter"
+          id="database-add-filter"
+        >
+          ＋ フィルター
+        </button>
+
+
+        <button
+          type="button"
+          class="database-sort-button"
+          id="database-sort-button"
+        >
+          ↕ 並べ替え
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div
+      id="database-filters"
+      class="database-filters"
+      hidden
+    >
+
+      {% if page_kind != 'genre' %}
+      <!-- ジャンル -->
+
+      <div
+        class="filter-chip"
+        data-filter="genre"
+        data-key="genre"
+      >
+
+        <button
+          type="button"
+          class="filter-chip-button"
+        >
+          <span>ジャンル</span>
+          <span class="filter-chip-count"></span>
+          <span class="filter-chip-caret">▾</span>
+        </button>
+
+        <div class="filter-panel" hidden>
+
+          {% if genres %}
+          {% for g in genres %}
+          <label class="filter-option">
+            <input type="checkbox" value="{{ g }}">
+            <span>{{ g }}</span>
+          </label>
+          {% endfor %}
+          {% else %}
+          <p class="filter-empty">ジャンルが未入力です</p>
+          {% endif %}
+
+        </div>
+
+      </div>
+      {% endif %}
+
+
+      {% if page_kind != 'assignee' %}
+      <!-- 担当者 -->
+
+      <div
+        class="filter-chip"
+        data-filter="assignee"
+        data-key="assignee"
+      >
+
+        <button
+          type="button"
+          class="filter-chip-button"
+        >
+          <span>担当者</span>
+          <span class="filter-chip-count"></span>
+          <span class="filter-chip-caret">▾</span>
+        </button>
+
+        <div class="filter-panel" hidden>
+
+          {% if assignees %}
+          {% for a in assignees %}
+          <label class="filter-option">
+            <input type="checkbox" value="{{ a }}">
+            <span>{{ a }}</span>
+          </label>
+          {% endfor %}
+          {% else %}
+          <p class="filter-empty">担当者が未設定です</p>
+          {% endif %}
+
+        </div>
+
+      </div>
+      {% endif %}
+
+
+      <!-- 案件名 -->
+
+      <div
+        class="filter-chip"
+        data-filter="name"
+        data-key="projectName"
+      >
+
+        <button
+          type="button"
+          class="filter-chip-button"
+        >
+          <span>案件名</span>
+          <span class="filter-chip-count"></span>
+          <span class="filter-chip-caret">▾</span>
+        </button>
+
+        <div class="filter-panel" hidden>
+
+          {% for p in projects | sort(attribute='name') %}
+          <label class="filter-option">
+            <input type="checkbox" value="{{ p.name }}">
+            <span>{{ p.name }}</span>
+          </label>
+          {% endfor %}
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ======================================================
+         並べ替え
+         ====================================================== -->
+
+    <div
+      id="database-sort-panel"
+      class="database-sort-panel"
+      hidden
+    >
+
+      <label>
+
+        <span>並べ替え項目</span>
+
+        <select id="database-sort-field">
+
+          <option value="">なし</option>
+          <option value="name">案件名</option>
+          <option value="project_no">案件番号</option>
+          {% if page_kind != 'genre' %}
+          <option value="genre">ジャンル</option>
+          {% endif %}
+          {% if page_kind != 'assignee' %}
+          <option value="assignee">担当者</option>
+          {% endif %}
+          <option value="created">初回登録日</option>
+
+        </select>
+
+      </label>
+
+
+      <label>
+
+        <span>順序</span>
+
+        <select id="database-sort-direction">
+
+          <option value="asc">昇順</option>
+          <option value="desc">降順</option>
+
+        </select>
+
+      </label>
+
+    </div>
+
+
+    <!-- ======================================================
+         表
+         ====================================================== -->
+
+    <div class="projects-table-wrap">
+
+      <table class="projects-table">
+
+        <thead>
+
+          <tr>
+            {% if page_kind != 'genre' %}<th>ジャンル</th>{% endif %}
+            <th>案件名</th>
+            {% if page_kind != 'assignee' %}<th>担当者</th>{% endif %}
+            <th>バージョン</th>
+            <th>初回登録</th>
+          </tr>
+
+        </thead>
+
+
+        <tbody id="projects-body">
+
+          {% for p in projects %}
+
+          <tr
+            class="project-row"
+            data-project-name="{{ p.name|lower }}"
+            data-project-no="{{ (p.project_no or '')|lower }}"
+            data-assignee="{{ (p.assignee or '')|lower }}"
+            data-genre="{{ (p.genre or '')|lower }}"
+            data-created="{{ p.created_at }}"
+          >
+
+            {% if page_kind != 'genre' %}
+            <td>
+              {% if p.genre %}
+              <a
+                class="database-pill pill-c{{ genre_colors.get(p.genre, 0) }} is-link"
+                href="{{ url_for('genre_page', genre=p.genre) }}"
+                title="このジャンルの案件だけを見る"
+              >{{ p.genre }}</a>
+              {% else %}
+              <span class="muted">—</span>
+              {% endif %}
+            </td>
+            {% endif %}
+
+
+            <td class="project-name-cell">
+
+              <a
+                class="project-link"
+                href="{{ url_for('project_page', key=p.slug or p.id) }}"
+              >{{ p.name }}</a>
+
+              {% if p.project_no %}
+              <span class="project-no">
+                {{ p.project_no }}
+              </span>
+              {% endif %}
+
+            </td>
+
+
+            {% if page_kind != 'assignee' %}
+            <td>
+              {% if p.assignee %}
+              <a
+                class="database-pill pill-c{{ assignee_colors.get(p.assignee, 0) }} is-link"
+                href="{{ url_for('assignee_page', assignee=p.assignee) }}"
+                title="この担当者の案件だけを見る"
+              >{{ p.assignee }}</a>
+              {% else %}
+              <span class="muted">—</span>
+              {% endif %}
+            </td>
+            {% endif %}
+
+
+            <td class="database-number">
+              {{ p.video_count }}
+            </td>
+
+
+            <td class="database-date">
+              {{ p.created_at }}
+            </td>
+
+          </tr>
+
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <div
+      id="projects-empty"
+      class="projects-empty"
+      hidden
+    >
+      条件に一致する案件がありません。
+    </div>
+
+  </section>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script src="{{ static_v('app.js') }}"></script>
+{% endblock %}

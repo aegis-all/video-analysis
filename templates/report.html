@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}作業時間 — 動画分析{% endblock %}
+
+
+{% block content %}
+
+<div class="page page-wide">
+
+
+  <section class="card">
+
+    <h2>作業時間</h2>
+
+    <p class="new-project-lead">
+      案件ページを開いているあいだ、<b>入力・カーソルの移動・スクロール</b>
+      のいずれかが続いている時間を数えています。
+      日本語変換の確定や貼り付け、マウスでの文字選択も作業として拾います。
+      30秒以上なにもしないと止まり、別のタブを見ているあいだや、
+      別のアプリを触っているあいだも数えません。<br>
+      表の左側（参考動画キャプチャ〜フィードバックメモ）を触っていた時間を
+      <b class="stat-analysis">分析</b>、右側（テキスト〜フィードバックメモ）を
+      触っていた時間を <b class="stat-reuse">転用</b> としています。
+      どちらの欄にも触れないまま動かしていた時間は、
+      どちらにも入れずに分けてあります。
+    </p>
+
+    <div class="stat-row">
+
+      <div class="stat">
+        <div class="stat-label">合計</div>
+        <div class="stat-value">{{ hhmm(total.total) }}</div>
+        <div class="stat-note">
+          {{ measured }} 件ぶん
+          {% if total.other %}
+          ／ どちらとも言えない {{ hhmm(total.other) }}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">分析</div>
+        <div class="stat-value stat-analysis">{{ hhmm(total.analysis) }}</div>
+        <div class="stat-note">
+          {% if total.total %}
+          全体の {{ (total.analysis * 100 // total.total) }}%
+          {% else %}—{% endif %}
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">転用</div>
+        <div class="stat-value stat-reuse">{{ hhmm(total.reuse) }}</div>
+        <div class="stat-note">
+          {% if total.total %}
+          全体の {{ (total.reuse * 100 // total.total) }}%
+          {% else %}—{% endif %}
+        </div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-label">1案件あたりの平均</div>
+        <div class="stat-value">{{ hhmm(average.total) }}</div>
+        <div class="stat-note">
+          分析 {{ hhmm(average.analysis) }} / 転用 {{ hhmm(average.reuse) }}
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  {% if days %}
+
+  <section class="card">
+
+    <h2>日ごとの内訳</h2>
+
+    <div class="daybars">
+
+      {% for day, v in days %}
+      <div class="daybar">
+
+        <div class="daybar-label">{{ day[5:] }}</div>
+
+        <div class="daybar-track">
+
+          <span
+            class="daybar-fill daybar-analysis"
+            style="width: {{ (v.analysis * 100 / day_max)|round(1) }}%"
+            title="分析 {{ hhmm(v.analysis) }}"
+          ></span>
+
+          <span
+            class="daybar-fill daybar-reuse"
+            style="width: {{ (v.reuse * 100 / day_max)|round(1) }}%"
+            title="転用 {{ hhmm(v.reuse) }}"
+          ></span>
+
+          <span
+            class="daybar-fill daybar-other"
+            style="width: {{ (v.other * 100 / day_max)|round(1) }}%"
+            title="どちらとも言えない {{ hhmm(v.other) }}"
+          ></span>
+
+        </div>
+
+        <div class="daybar-total">{{ hhmm(v.total) }}</div>
+
+      </div>
+      {% endfor %}
+
+    </div>
+
+    <p class="legend">
+      <span class="legend-key legend-analysis"></span>分析
+      <span class="legend-key legend-reuse"></span>転用
+      <span class="legend-key legend-other"></span>どちらとも言えない
+    </p>
+
+  </section>
+
+  {% endif %}
+
+
+
+  <!-- ========================================================
+       目標との比較
+       ======================================================== -->
+
+  <section class="card">
+
+    <h2>目標との比較</h2>
+
+    <p class="new-project-lead">
+      1案件あたりの平均と、<a href="{{ url_for('board_page') }}">進捗ボード</a>で
+      決めた目標時間をならべています。
+    </p>
+
+    <div class="goals">
+
+      {% for g in goals %}
+      <div class="goal-line {{ 'is-over' if g.diff > 0 }}">
+
+        <div class="goal-line-label">{{ g.label }}</div>
+
+        <div class="goal-line-bar">
+          <span
+            class="goal-line-fill"
+            style="width: {{ [g.rate, 100]|min }}%"
+          ></span>
+          <span class="goal-line-mark"></span>
+        </div>
+
+        <div class="goal-line-num">
+          {{ hhmm(g.actual) }}
+          <span class="muted">/ 目標 {{ hhmm(g.target) }}</span>
+        </div>
+
+        <div class="goal-line-diff">
+          {% if g.diff > 0 %}
+          +{{ hhmm(g.diff) }} 超過
+          {% elif g.diff < 0 %}
+          {{ hhmm(-g.diff) }} 短い ✓
+          {% else %}—{% endif %}
+        </div>
+
+      </div>
+      {% endfor %}
+
+    </div>
+
+  </section>
+
+
+  <!-- ========================================================
+       ボトルネック
+       ======================================================== -->
+
+  {% if average.total %}
+  <section class="card">
+
+    <h2>ボトルネック</h2>
+
+    <div class="bottleneck">
+
+      <div class="bottleneck-mark">⚠</div>
+
+      <div>
+        <p class="bottleneck-text">
+          <b>{{ bottleneck.label }}</b>に
+          <b>{{ hhmm(bottleneck.seconds) }}</b>かかっていて、
+          いちばん時間を使っています（全体の {{ bottleneck.share }}%）。
+        </p>
+
+        <p class="bottleneck-sub">
+          {% if bottleneck.over > 0 %}
+          目標より {{ hhmm(bottleneck.over) }} 超えています。
+          {% else %}
+          目標の {{ hhmm(bottleneck.target) }} には収まっています。
+          {% endif %}
+        </p>
+      </div>
+
+    </div>
+
+    <p class="note-hint">
+      ここに出るのは「どこに時間がかかっているか」という計測結果までです。
+      打ち手そのものは、共通ノートの指摘とあわせて決めてください。
+    </p>
+
+  </section>
+  {% endif %}
+
+
+  <!-- ========================================================
+       メンバー別
+       ======================================================== -->
+
+  {% if members %}
+  <section class="card">
+
+    <h2>メンバー別</h2>
+
+    <p class="new-project-lead">
+      完成数は案件の担当ユーザー、時間はその人が実際に画面を触っていた長さです。
+      担当が決まっていない案件は、いちばん長く作業した人のものとして数えています。
+    </p>
+
+    <div class="projects-table-wrap">
+
+      <table class="projects-table report-table">
+
+        <thead>
+          <tr>
+            <th>メンバー</th>
+            <th class="report-num">完成数</th>
+            <th class="report-num">かかえている数</th>
+            <th class="report-num">分析平均</th>
+            <th class="report-num">転用平均</th>
+            <th class="report-num">全体平均</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {% for m in members %}
+          <tr>
+            <td>
+              <span class="member">
+                <span class="member-avatar">{{ m.name[:1]|upper }}</span>
+                {{ m.name }}
+              </span>
+            </td>
+            <td class="report-num">{{ m.done }}</td>
+            <td class="report-num">{{ m.total_projects - m.done }}</td>
+            <td class="report-num">{{ hhmm(m.avg_analysis) }}</td>
+            <td class="report-num">{{ hhmm(m.avg_reuse) }}</td>
+            <td class="report-num"><b>{{ hhmm(m.avg_total) }}</b></td>
+          </tr>
+          {% endfor %}
+
+          <tr class="report-total">
+            <td>チーム平均</td>
+            <td class="report-num">{{ team.done }}</td>
+            <td class="report-num">—</td>
+            <td class="report-num">{{ hhmm(team.avg_analysis) }}</td>
+            <td class="report-num">{{ hhmm(team.avg_reuse) }}</td>
+            <td class="report-num"><b>{{ hhmm(team.avg_total) }}</b></td>
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+    <div class="member-charts">
+
+      {% for side, label in (('avg_analysis', '分析平均'), ('avg_reuse', '転用平均')) %}
+      <div class="member-chart">
+
+        <div class="member-chart-title">{{ label }}</div>
+
+        <div class="member-bars">
+          {% for m in members %}
+          <div class="member-bar">
+            <div class="member-bar-track">
+              <span
+                class="member-bar-fill {{ 'is-analysis' if side == 'avg_analysis' else 'is-reuse' }}"
+                style="height: {{ (m[side] * 100 / member_max)|round(1) }}%"
+                title="{{ hhmm(m[side]) }}"
+              ></span>
+            </div>
+            <div class="member-bar-name">{{ m.name[:6] }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+      {% endfor %}
+
+    </div>
+
+  </section>
+  {% endif %}
+
+
+  <!-- ========================================================
+       指摘の多さ
+       ======================================================== -->
+
+  {% if loads %}
+  <section class="card">
+
+    <h2>指摘の多さ</h2>
+
+    <p class="new-project-lead">
+      修正の回数そのものは記録していないので、
+      <b>フィードバックが書かれた行の数</b>を目安にしています。
+      割合が下がってきていれば、手戻りが減っているということです。
+    </p>
+
+    <div class="projects-table-wrap">
+
+      <table class="projects-table report-table">
+
+        <thead>
+          <tr>
+            <th>案件名</th>
+            <th class="report-num">指摘のある行</th>
+            <th class="report-num">全行</th>
+            <th class="report-ratio">割合</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {% for l in loads %}
+          <tr>
+            <td class="project-name-cell">
+              <a
+                class="project-link"
+                href="{{ url_for('project_page', key=l.row.slug or l.row.id) }}"
+              >{{ l.row.name }}</a>
+              {% if l.row.project_no %}
+              <span class="project-no">{{ l.row.project_no }}</span>
+              {% endif %}
+            </td>
+            <td class="report-num">{{ l.noted }}</td>
+            <td class="report-num">{{ l.rows_total }}</td>
+            <td class="report-ratio">
+              <span class="ratio">
+                <span class="ratio-analysis" style="width: {{ l.rate }}%"></span>
+              </span>
+              <span class="ratio-num">{{ l.rate }}%</span>
+            </td>
+          </tr>
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+  {% endif %}
+
+
+  <section class="card">
+
+    <h2>案件ごと</h2>
+
+    {% if rows %}
+
+    <div class="projects-table-wrap">
+
+      <table class="projects-table report-table">
+
+        <thead>
+          <tr>
+            <th>ジャンル</th>
+            <th>案件名</th>
+            <th>担当者</th>
+            <th class="report-num">分析</th>
+            <th class="report-num">転用</th>
+            <th class="report-num">合計</th>
+            <th class="report-ratio">割合</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {% for r in rows %}
+          <tr>
+
+            <td>
+              {% if r.row.genre %}
+              <span class="database-pill pill-c{{ genre_colors.get(r.row.genre, 0) }}">
+                {{ r.row.genre }}
+              </span>
+              {% else %}
+              <span class="muted">—</span>
+              {% endif %}
+            </td>
+
+            <td class="project-name-cell">
+              <a
+                class="project-link"
+                href="{{ url_for('project_page', key=r.row.slug or r.row.id) }}"
+              >{{ r.row.name }}</a>
+              {% if r.row.project_no %}
+              <span class="project-no">{{ r.row.project_no }}</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if r.row.assignee %}
+              <span class="database-pill pill-c{{ assignee_colors.get(r.row.assignee, 0) }}">
+                {{ r.row.assignee }}
+              </span>
+              {% else %}
+              <span class="muted">—</span>
+              {% endif %}
+            </td>
+
+            <td class="report-num">{{ hhmm(r.analysis) }}</td>
+            <td class="report-num">{{ hhmm(r.reuse) }}</td>
+            <td class="report-num"><b>{{ hhmm(r.total) }}</b></td>
+
+            <td class="report-ratio">
+              <span class="ratio">
+                <span
+                  class="ratio-analysis"
+                  style="width: {{ (r.analysis * 100 / r.total)|round(1) }}%"
+                ></span>
+                <span
+                  class="ratio-reuse"
+                  style="width: {{ (r.reuse * 100 / r.total)|round(1) }}%"
+                ></span>
+              </span>
+            </td>
+
+          </tr>
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+    {% else %}
+
+    <div class="database-no-projects">
+
+      <div class="database-no-projects-title">
+        まだ記録がありません
+      </div>
+
+      <div class="muted">
+        案件ページを開いて入力すると、そこから時間を数えはじめます。
+      </div>
+
+    </div>
+
+    {% endif %}
+
+  </section>
+
+
+</div>
+
+{% endblock %}

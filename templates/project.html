@@ -1,0 +1,957 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - 動画分析{% endblock %}
+
+{% block topbar %}
+<div class="project-topbar">
+
+  <a
+    class="back-link"
+    href="{{ url_for('index') }}"
+  >
+    ← 案件一覧
+  </a>
+
+  <span class="project-name">
+    {{ project.name }}
+  </span>
+
+  <button
+    type="button"
+    class="permalink-button"
+    id="permalink-button"
+    data-url="{{ url_for('project_page', key=project.slug or project.id, _external=True) }}"
+    data-label="{{ project.name }}{{ project.project_no or '' }}"
+    title="この案件へのリンクをコピーします"
+  >
+    🔗 {{ project.name }}{{ project.project_no or '' }}
+  </button>
+
+</div>
+{% endblock %}
+
+
+{% block content %}
+
+<div
+  class="project"
+  data-project-id="{{ project.id }}"
+  data-column-widths="{{ project.column_widths or '' }}"
+  data-video-id="{{ current.id if current else '' }}"
+  data-status="{{ current.status if current else 'none' }}"
+>
+
+  <!-- ========================================================
+       案件情報
+       ======================================================== -->
+
+  <section class="project-info-card">
+
+    <div class="project-info-head" data-project="{{ project.id }}">
+
+      <div class="project-info-main">
+
+        <div class="project-info-title">
+
+          <span class="meta-view">{{ project.name }}</span>
+          <span
+            class="meta-edit edit-field edit-name"
+            data-field="name"
+            contenteditable="plaintext-only"
+            spellcheck="false"
+          >{{ project.name }}</span>
+
+          <span class="meta-view meta-view-no {{ 'is-blank' if not project.project_no }}">
+            {{ project.project_no or '' }}
+          </span>
+          <span
+            class="meta-edit edit-field edit-no {{ 'is-empty' if not project.project_no }}"
+            data-field="project_no"
+            data-placeholder="番号"
+            contenteditable="plaintext-only"
+            spellcheck="false"
+          >{{ project.project_no or '' }}</span>
+
+          <span class="project-info-actions">
+
+            <button type="button" class="project-edit" id="project-edit">
+              編集
+            </button>
+
+            <form
+              method="post"
+              action="{{ url_for('copy_project', project_id=project.id) }}"
+              onsubmit="return confirm('この案件のコピーを作ります。\n参考動画・スクショ・分析の入力はそのまま、転用の入力だけ空になります。');"
+            >
+              <button type="submit" class="project-copy">
+                コピーを作成
+              </button>
+            </form>
+
+          </span>
+
+        </div>
+
+        <div class="project-info-meta">
+
+          <span class="meta-item">
+            <span class="meta-label">ジャンル</span>
+
+            <span class="meta-view">
+              {% if project.genre %}
+              <a
+                class="meta-link"
+                data-view="genre"
+                href="{{ url_for('genre_page', genre=project.genre) }}"
+                title="このジャンルの案件だけを見る"
+              >{{ project.genre }}</a>
+              {% else %}
+              <span class="meta-none" data-view="genre">未設定</span>
+              {% endif %}
+            </span>
+
+            <span
+              class="meta-edit edit-field edit-tag {{ 'is-empty' if not project.genre }}"
+              data-field="genre"
+              data-placeholder="未設定"
+              contenteditable="plaintext-only"
+              spellcheck="false"
+            >{{ project.genre or '' }}</span>
+          </span>
+
+          <span class="meta-item">
+            <span class="meta-label">担当者</span>
+
+            <span class="meta-view">
+              {% if project.assignee %}
+              <a
+                class="meta-link"
+                data-view="assignee"
+                href="{{ url_for('assignee_page', assignee=project.assignee) }}"
+                title="この担当者の案件だけを見る"
+              >{{ project.assignee }}</a>
+              {% else %}
+              <span class="meta-none" data-view="assignee">未設定</span>
+              {% endif %}
+            </span>
+
+            <span
+              class="meta-edit edit-field edit-tag {{ 'is-empty' if not project.assignee }}"
+              data-field="assignee"
+              data-placeholder="未設定"
+              contenteditable="plaintext-only"
+              spellcheck="false"
+            >{{ project.assignee or '' }}</span>
+          </span>
+
+          <span class="meta-item">
+            <span class="meta-label">初回登録</span>
+            <span class="meta-time">{{ project.created_at }}</span>
+          </span>
+
+          <span class="meta-item">
+            <span class="meta-label">最終更新</span>
+            <span class="meta-time" id="project-updated">{{ project.updated_at }}</span>
+          </span>
+
+        </div>
+
+      </div>
+
+
+
+    </div>
+
+  </section>
+
+
+  {% if not current or current.status == 'none' %}
+
+  <!-- ========================================================
+       動画がまだ無い案件
+       ======================================================== -->
+
+  <details class="no-video">
+
+    <summary>
+      <span class="no-video-badge">動画なし</span>
+      動画を追加する
+    </summary>
+
+    <p class="muted no-video-note">
+      動画を追加すると、下の表の上から順にスクリーンショットが入ります。
+      先にテキストを書いておけば、その行に画像が付きます。
+    </p>
+
+    <form
+      method="post"
+      action="{{ url_for('add_video', project_id=project.id) }}"
+      enctype="multipart/form-data"
+      class="no-video-form"
+      data-uploading
+    >
+
+      <div
+        class="source-picker"
+        id="source-picker"
+      >
+
+        <div class="source-tabs">
+
+          <button
+            type="button"
+            class="source-tab is-active"
+            data-source="file"
+          >
+            📁 ファイルアップロード
+          </button>
+
+          <button
+            type="button"
+            class="source-tab"
+            data-source="url"
+          >
+            🔗 動画リンクから追加
+          </button>
+
+        </div>
+
+
+        <div class="source-panel" data-panel="file">
+
+          <label for="video">動画ファイルを選択</label>
+
+          <input
+            type="file"
+            id="video"
+            name="video"
+            accept="video/*"
+          >
+
+        </div>
+
+
+        <div class="source-panel is-hidden" data-panel="url">
+
+          <label for="video_url">動画のリンク</label>
+
+          <input
+            type="url"
+            id="video_url"
+            name="video_url"
+            placeholder="https://assets.douga-pro.com/youtube/xxxxx/video.mp4"
+            autocomplete="off"
+            disabled
+          >
+
+        </div>
+
+      </div>
+
+      <div class="no-video-actions">
+        <button type="submit" class="primary">
+          追加して開始
+        </button>
+      </div>
+
+    </form>
+
+  </details>
+
+  {% endif %}
+
+
+  {% if current and current.status != 'none' %}
+
+  <!-- ========================================================
+       バージョン
+       ======================================================== -->
+
+  <div class="toolbar">
+
+    <!-- 追加機能2：バージョンのタイムライン -->
+
+    <nav
+      class="version-timeline"
+      aria-label="バージョン"
+    >
+
+      {% for v in videos %}
+
+      {% if not loop.first %}
+      <span
+        class="version-arrow"
+        aria-hidden="true"
+      >→</span>
+      {% endif %}
+
+      <a
+        class="version-step{% if v.id == current.id %} is-current{% endif %}
+              {% if v.status == 'error' %} is-error{% elif v.status != 'done' %} is-working{% endif %}"
+        href="{{ url_for(
+          'project_page',
+          key=project.slug or project.id,
+          v=v.id
+        ) }}"
+        {% if v.id == current.id %}aria-current="true"{% endif %}
+      >
+
+        <span class="version-step-label">
+          {{ v.version_label }}
+        </span>
+
+        <span class="version-step-date">
+          {{ v.created_at }}
+          {%- if v.status == 'error' %} / 失敗
+          {%- elif v.status != 'done' %} / 処理中
+          {%- endif %}
+        </span>
+
+      </a>
+
+      {% endfor %}
+
+    </nav>
+
+  </div>
+
+
+  <!-- ========================================================
+       エラー
+       ======================================================== -->
+
+  {% if current and current.status == 'error' %}
+
+  <div class="panel error">
+
+    <h3>
+      動画処理に失敗しました
+    </h3>
+
+    <pre>{{ current.error_message }}</pre>
+
+    <div class="row">
+
+      <form
+        method="post"
+        action="{{ url_for(
+          'retry_video',
+          video_id=current.id
+        ) }}"
+      >
+
+        <button
+          type="submit"
+          class="primary"
+        >
+          もう一度実行
+        </button>
+
+      </form>
+
+
+      <form
+        method="post"
+        action="{{ url_for(
+          'delete_video',
+          video_id=current.id
+        ) }}"
+      >
+
+        <button
+          type="submit"
+          class="danger"
+        >
+          この動画を削除
+        </button>
+
+      </form>
+
+    </div>
+
+  </div>
+
+  {% elif current and current.status != 'done' %}
+
+  <div
+    class="panel processing"
+    id="processing"
+  >
+
+    <h3>
+      動画を処理しています
+    </h3>
+
+    <p>
+      スクリーンショットを生成しています。
+      しばらくお待ちください。
+    </p>
+
+    <div class="bar">
+
+      <div
+        class="bar-fill"
+        id="bar-fill"
+        style="width:{{ current.progress }}%"
+      ></div>
+
+    </div>
+
+    <p
+      class="muted"
+      id="stage"
+    >
+      {{ current.stage or '準備しています' }}
+    </p>
+
+  </div>
+
+  {% endif %}
+
+  {% endif %}
+
+
+  {% if current and current.status != 'none' %}
+
+  <!-- ========================================================
+       動画
+       ======================================================== -->
+
+  <div
+    class="player-wrap"
+    id="player-wrap"
+    data-mode="float"
+  >
+
+    <!-- 改修1：つかんで動かす／最小化／非表示 -->
+
+    <div
+      class="player-bar"
+      id="player-bar"
+    >
+
+      <span class="player-bar-title">
+        {{ current.version_label }}
+      </span>
+
+      <span class="player-bar-actions">
+
+        <button
+          type="button"
+          id="player-min"
+          class="player-bar-btn"
+          title="最小化"
+          aria-label="最小化"
+        >−</button>
+
+        <button
+          type="button"
+          id="player-restore"
+          class="player-bar-btn"
+          title="元の大きさに戻す"
+          aria-label="元の大きさに戻す"
+        >⤢</button>
+
+        <button
+          type="button"
+          id="player-hide"
+          class="player-bar-btn"
+          title="非表示"
+          aria-label="非表示"
+        >✕</button>
+
+      </span>
+
+    </div>
+
+    <div class="player-stage">
+
+      <video
+        id="player"
+        controls
+        preload="metadata"
+        src="{{ url_for(
+          'media_video',
+          video_id=current.id
+        ) }}"
+      ></video>
+
+      <button
+        type="button"
+        id="capture-shot"
+        class="capture-shot"
+        data-video="{{ current.id }}"
+        title="いま見えている場面を、表の一番下に足します"
+      >
+        <span class="capture-icon" aria-hidden="true"></span>
+        <span class="capture-label">この場面を追加</span>
+      </button>
+
+    </div>
+
+
+    <div class="player-meta">
+
+      <span id="cur-time">
+        00:00
+      </span>
+
+      /
+
+      <span id="dur-time">
+        --:--
+      </span>
+
+      <span class="muted file">
+        {{ current.original_name }}
+      </span>
+
+
+      <div class="player-size">
+
+        <label for="player-size-slider">
+          サイズ
+          <span id="player-size-label">65</span>%
+        </label>
+
+        <input
+          type="range"
+          id="player-size-slider"
+          min="20"
+          max="100"
+          step="5"
+          value="65"
+          aria-label="動画プレイヤーの大きさ"
+        >
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ========================================================
+       レビュー表
+       ======================================================== -->
+
+  <!-- 選択した行の操作。1つ以上選ぶと出てくる -->
+  <div
+    class="row-delete-bar"
+    id="row-delete-bar"
+    hidden
+  >
+
+    <span class="row-delete-count">
+      <strong id="row-delete-count">0</strong> 行選択
+    </span>
+
+    <button
+      type="button"
+      class="row-delete-run"
+      id="row-delete-run"
+      title="選択した行とスクリーンショットを削除します"
+    >
+      削除
+    </button>
+
+    <button
+      type="button"
+      class="row-delete-clear"
+      id="row-delete-clear"
+    >
+      解除
+    </button>
+
+  </div>
+
+
+  <!-- 削除したあとに出る「元に戻す」 -->
+  <div
+    class="row-undo"
+    id="row-undo"
+    hidden
+  >
+
+    <span class="row-undo-text"></span>
+
+    <button
+      type="button"
+      class="row-undo-button"
+    >
+      元に戻す
+    </button>
+
+  </div>
+
+
+  {% endif %}
+
+
+  <div class="table-wrap">
+
+    <table class="sheet">
+
+      <thead>
+
+        <tr>
+
+          <th class="c-num">
+            #
+            <span class="col-grip" data-col="0" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="reference-group c-shot">
+            参考動画キャプチャ
+            <span class="col-grip" data-col="1" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="reference-group c-time">
+            秒数
+            <span class="col-grip" data-col="2" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="reference-group">
+            役割
+            <span class="col-grip" data-col="3" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="reference-group">
+            素材の特徴
+            <span class="col-grip" data-col="4" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="reference-group">
+            備考・改善案
+            <span class="col-grip" data-col="5" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="reference-group">
+            フィードバックメモ
+            <span class="col-grip" data-col="6" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="result-group result-start">
+
+            <span class="th-label">
+              テキスト
+            </span>
+
+            <span
+              class="th-total"
+              id="text-total"
+              title="テキスト列の全文字数から算出した想定尺（5.5文字＝1秒）"
+            >
+              合計: <strong>0.0</strong>秒
+            </span>
+
+            <span class="col-grip" data-col="7" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="result-group material-cell">
+            素材
+            <span class="col-grip" data-col="8" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="result-group">
+            役割
+            <span class="col-grip" data-col="9" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="result-group">
+            シーン後の気持ち
+            <span class="col-grip" data-col="10" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+          <th class="result-group">
+            フィードバックメモ
+            <span class="col-grip" data-col="11" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody id="rows" data-video="{{ current.id }}">
+
+        {% for s in shots %}
+
+        <tr
+          data-seek="{{ s.timestamp_sec }}"
+          data-shot-row="{{ s.id }}"
+          {% if s.is_manual %}data-manual="1"{% endif %}
+          {% if s.row_height %}data-h="{{ s.row_height }}"
+          style="--row-h: {{ s.row_height }}px"{% endif %}
+        >
+
+          <td class="c-num">
+
+            <input
+              type="checkbox"
+              class="row-select"
+              data-shot="{{ s.id }}"
+              title="選択して削除できます"
+              aria-label="{{ s.seq }} 行目を選択"
+            >
+
+            <span class="row-seq">{{ s.seq }}</span>
+
+            <!-- 行の境目をつかんで高さを変える -->
+            <span
+              class="row-grip"
+              data-shot="{{ s.id }}"
+              title="ドラッグで行の高さを変える（ダブルクリックで自動に戻す）"
+            ></span>
+
+          </td>
+
+
+          <td class="c-shot">
+
+            {% if s.image_path %}
+            <img
+              loading="lazy"
+              decoding="async"
+              width="124"
+              height="220"
+              src="{{ url_for(
+                'media_shot',
+                shot_id=s.id
+              ) }}"
+              alt="{{ s.seq }}"
+              data-seek="{{ s.timestamp_sec }}"
+              data-full="{{ url_for(
+                'media_shot',
+                shot_id=s.id
+              ) }}"
+            >
+            {% else %}
+            <span class="shot-empty" aria-hidden="true"></span>
+            {% endif %}
+
+          </td>
+
+
+          <td class="c-time">
+
+            <button
+              type="button"
+              class="seek"
+              data-seek="{{ s.timestamp_sec }}"
+            >
+              {{ s.timestamp_sec | mmss }}
+            </button>
+
+          </td>
+
+
+          <!-- 参考動画：役割 -->
+
+          <td>
+
+            <textarea
+              data-shot="{{ s.id }}"
+              data-field="reference_role"
+              rows="3"
+              placeholder="参考動画での役割"
+            >{{ s.reference_role }}</textarea>
+
+          </td>
+
+
+          <!-- 参考動画：素材の特徴 -->
+
+          <td>
+
+            <textarea
+              data-shot="{{ s.id }}"
+              data-field="material_feature"
+              rows="3"
+              placeholder="素材の特徴"
+            >{{ s.material_feature }}</textarea>
+
+          </td>
+
+
+          <!-- 参考動画：備考・改善案 -->
+
+          <td>
+
+            <textarea
+              data-shot="{{ s.id }}"
+              data-field="improvement_note"
+              rows="3"
+              placeholder="備考・改善案"
+            >{{ s.improvement_note }}</textarea>
+
+          </td>
+
+
+          <!-- 参考動画：FBメモ -->
+
+          <td>
+
+            <textarea
+              data-shot="{{ s.id }}"
+              data-field="reference_feedback"
+              rows="3"
+              placeholder="フィードバックメモ"
+            >{{ s.reference_feedback }}</textarea>
+
+          </td>
+
+
+          <!-- 自分の動画：テキスト -->
+
+          <td class="result-start">
+
+            <textarea
+              data-shot="{{ s.id }}"
+              data-field="text_raw"
+              rows="3"
+              placeholder="テキスト"
+            >{{ s.text_raw }}</textarea>
+
+          </td>
+
+
+          <!-- 自分の動画：素材 -->
+
+          <td class="material-cell">
+
+            <div
+              class="material-editor"
+              contenteditable="true"
+              data-shot="{{ s.id }}"
+              data-field="material"
+              data-placeholder="素材を入力。画像を貼り付けできます"
+              role="textbox"
+              aria-label="素材"
+            >{{ s.material | safe }}</div>
+
+          </td>
+
+
+          <!-- 自分の動画：役割 -->
+
+          <td>
+
+            <textarea
+              data-shot="{{ s.id }}"
+              data-field="role"
+              rows="3"
+              placeholder="役割"
+            >{{ s.role }}</textarea>
+
+          </td>
+
+
+          <!-- 自分の動画：シーン後の気持ち -->
+
+          <td>
+
+            <textarea
+              data-shot="{{ s.id }}"
+              data-field="scene_feeling"
+              rows="3"
+              placeholder="シーン後の気持ち"
+            >{{ s.scene_feeling }}</textarea>
+
+          </td>
+
+
+          <!-- 自分の動画：FBメモ -->
+
+          <td>
+
+            <textarea
+              data-shot="{{ s.id }}"
+              data-field="feedback"
+              rows="3"
+              placeholder="フィードバックメモ"
+            >{{ s.feedback }}</textarea>
+
+          </td>
+
+        </tr>
+
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+
+
+    {% if current.status == 'done' and not shots %}
+
+    <p class="muted pad">
+      スクリーンショットがありません。
+    </p>
+
+    {% endif %}
+
+
+    <!-- 一番下の ＋ を押すと行が増える -->
+    <div class="row-add-wrap">
+
+      <button
+        type="button"
+        class="row-add"
+        id="row-add"
+        data-video="{{ current.id }}"
+        title="行を1つ追加します"
+        aria-label="行を追加"
+      >
+        ＋
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<button
+  type="button"
+  id="player-show"
+  class="player-show"
+  hidden
+>▶ 動画を表示</button>
+
+
+<div
+  id="lightbox"
+  class="lightbox"
+  hidden
+>
+  <button
+    type="button"
+    id="lightbox-close"
+    class="lightbox-close"
+    aria-label="閉じる"
+    title="閉じる（Esc）"
+  >×</button>
+
+  <img
+    id="lightbox-img"
+    alt=""
+  >
+</div>
+
+
+<div
+  id="toast"
+  class="toast"
+  hidden
+></div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script src="{{ static_v('app.js') }}"></script>
+
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "auth_base.html" %}
+
+{% block title %}ログイン{% endblock %}
+
+{% block body %}
+
+{% if stage == 'code' %}
+
+<h1 class="auth-title">確認コード</h1>
+
+<p class="auth-note">
+  Google Authenticator に表示されている6桁を入力してください。
+</p>
+
+{% if error %}
+<p class="auth-error"><span aria-hidden="true">!</span>{{ error }}</p>
+{% endif %}
+
+<form method="post" class="auth-form">
+
+  <input
+    type="text"
+    name="code"
+    inputmode="numeric"
+    autocomplete="one-time-code"
+    pattern="[0-9 ]*"
+    maxlength="7"
+    placeholder="000000"
+    class="auth-code"
+    required
+    autofocus
+  >
+
+  <button type="submit" class="primary auth-submit">ログイン</button>
+
+</form>
+
+<p class="auth-sub">
+  <a href="{{ url_for('auth.logout') }}">最初からやり直す</a>
+</p>
+
+{% else %}
+
+<h1 class="auth-title">ログイン</h1>
+
+<p class="auth-note">
+  IDとパスワードのあと、6桁の確認コードを入力します。
+</p>
+
+{% if error %}
+<p class="auth-error"><span aria-hidden="true">!</span>{{ error }}</p>
+{% endif %}
+
+<form method="post" class="auth-form">
+
+  <label>
+    <span>ID</span>
+    <input type="text" name="username" autocomplete="username" required autofocus>
+  </label>
+
+  <label>
+    <span>パスワード</span>
+    <input type="password" name="password" autocomplete="current-password" required>
+  </label>
+
+  <button type="submit" class="primary auth-submit">次へ</button>
+
+</form>
+
+{% endif %}
+
+{% endblock %}

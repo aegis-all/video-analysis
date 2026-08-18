@@ -1,0 +1,45 @@
+{% extends "auth_base.html" %}
+
+{% block title %}初期設定{% endblock %}
+
+{% block body %}
+
+<h1 class="auth-title">最初のユーザーを作る</h1>
+
+<p class="auth-note">
+  このアプリを使う人のIDとパスワードを決めてください。
+  次の画面で Google Authenticator の登録に進みます。
+</p>
+
+{% if error %}
+<p class="auth-error"><span aria-hidden="true">!</span>{{ error }}</p>
+{% endif %}
+
+<form method="post" class="auth-form">
+
+  <label>
+    <span>ID</span>
+    <input type="text" name="username" autocomplete="username" required autofocus>
+  </label>
+
+  <label>
+    <span>表示名<em>案件の担当者欄に入ります</em></span>
+    <input type="text" name="display_name" maxlength="40"
+           placeholder="山田" autocomplete="nickname">
+  </label>
+
+  <label>
+    <span>パスワード<em>8文字以上</em></span>
+    <input type="password" name="password" autocomplete="new-password" required minlength="8">
+  </label>
+
+  <label>
+    <span>パスワード（確認）</span>
+    <input type="password" name="confirm" autocomplete="new-password" required minlength="8">
+  </label>
+
+  <button type="submit" class="primary auth-submit">作成して次へ</button>
+
+</form>
+
+{% endblock %}

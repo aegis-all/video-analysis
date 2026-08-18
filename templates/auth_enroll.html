@@ -1,0 +1,56 @@
+{% extends "auth_base.html" %}
+
+{% block title %}2段階認証の登録{% endblock %}
+
+{% block body %}
+
+<h1 class="auth-title">Google Authenticator の登録</h1>
+
+<p class="auth-note">
+  スマートフォンのアプリで下の QR コードを読み取り、
+  表示された6桁を入力してください。
+</p>
+
+<img class="auth-qr" src="{{ qr }}" alt="QRコード" width="200" height="200">
+
+<details class="auth-manual">
+
+  <summary>QRが読めないとき</summary>
+
+  <p class="auth-note">
+    アプリに手入力する場合はこのキーを使ってください。
+  </p>
+
+  <code class="auth-secret">{{ secret }}</code>
+
+</details>
+
+{% if error %}
+<p class="auth-error"><span aria-hidden="true">!</span>{{ error }}</p>
+{% endif %}
+
+<form method="post" class="auth-form">
+
+  <label>
+    <span>表示名<em>案件の担当者欄に入ります</em></span>
+    <input type="text" name="display_name" maxlength="40"
+           value="{{ display_name }}" autocomplete="nickname" required>
+  </label>
+
+  <input
+    type="text"
+    name="code"
+    inputmode="numeric"
+    autocomplete="one-time-code"
+    pattern="[0-9 ]*"
+    maxlength="7"
+    placeholder="000000"
+    class="auth-code"
+    required
+  >
+
+  <button type="submit" class="primary auth-submit">登録する</button>
+
+</form>
+
+{% endblock %}

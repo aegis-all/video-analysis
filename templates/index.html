@@ -1,0 +1,663 @@
+{% extends "base.html" %}
+
+{% block title %}案件一覧 — 動画分析{% endblock %}
+
+
+{% block content %}
+
+<div class="page">
+
+
+  <!-- ========================================================
+       新規案件
+       ======================================================== -->
+
+  <section class="card new-project-card">
+
+    <div class="new-project-header">
+
+      <div>
+        <h2>案件を追加</h2>
+
+        <p class="new-project-lead">
+          動画を登録すると、場面ごとのスクリーンショットが自動で並びます。
+          動画は後から追加してもかまいません。
+        </p>
+      </div>
+
+    </div>
+
+
+    <form
+      method="post"
+      action="{{ url_for('create_project') }}"
+      enctype="multipart/form-data"
+      class="upload-form"
+      data-uploading
+    >
+
+      <div class="field-grid">
+
+        <div class="field">
+
+          <label for="genre">
+            ジャンル
+            <em class="field-opt">任意</em>
+          </label>
+
+          <input
+            type="text"
+            id="genre"
+            name="genre"
+            placeholder="美容 / 健康食品 / 投資"
+            list="genre-list"
+            autocomplete="off"
+          >
+
+          <datalist id="genre-list">
+
+            {% for g in genres %}
+            <option value="{{ g.genre }}">
+            {% endfor %}
+
+          </datalist>
+
+
+        </div>
+
+        <div class="field">
+
+          <label for="name">
+            案件名
+            <em class="field-req">必須</em>
+          </label>
+
+          <input
+            type="text"
+            id="name"
+            name="name"
+            required
+            placeholder="A社 YouTube動画"
+            autocomplete="off"
+          >
+
+
+        </div>
+
+        <div class="field">
+
+          <label for="project_no">
+            案件番号
+            <em class="field-opt">任意</em>
+          </label>
+
+          <input
+            type="text"
+            id="project_no"
+            name="project_no"
+            placeholder="2026-001"
+            autocomplete="off"
+          >
+
+
+        </div>
+
+        <div class="field">
+
+          <label for="assignee">
+            担当者
+            <em class="field-opt">任意</em>
+          </label>
+
+          <input
+            type="text"
+            id="assignee"
+            name="assignee"
+            value="{{ (current_user.display_name or current_user.username.split('@')[0]) if current_user else '' }}"
+            placeholder="山田"
+            autocomplete="off"
+          >
+
+
+        </div>
+
+      </div>
+
+
+      <!-- ==================================================
+           動画の指定：ファイル / リンクのどちらか一方
+           ================================================== -->
+
+      <div class="field-section">
+        <span class="field-section-label">動画</span>
+        <em class="field-opt">任意</em>
+        <span class="field-section-note">
+          入れずに作ると、空の行が30行できます。
+        </span>
+      </div>
+
+      <div
+        class="source-picker"
+        id="source-picker"
+      >
+
+        <div class="source-tabs">
+
+          <button
+            type="button"
+            class="source-tab is-active"
+            data-source="file"
+          >
+            📁 ファイルアップロード
+          </button>
+
+          <button
+            type="button"
+            class="source-tab"
+            data-source="url"
+          >
+            🔗 動画リンクから追加
+          </button>
+
+        </div>
+
+
+        <div
+          class="source-panel"
+          data-panel="file"
+        >
+
+          <label for="video">
+            動画ファイルを選択
+          </label>
+
+          <input
+            type="file"
+            id="video"
+            name="video"
+            accept="video/*"
+          >
+
+        </div>
+
+
+        <div
+          class="source-panel is-hidden"
+          data-panel="url"
+        >
+
+          <label for="video_url">
+            動画のリンク
+          </label>
+
+          <input
+            type="url"
+            id="video_url"
+            name="video_url"
+            placeholder="https://assets.douga-pro.com/youtube/xxxxx/video.mp4"
+            autocomplete="off"
+            disabled
+          >
+
+          <p class="hint muted">
+            動画ファイルへの直接リンク（.mp4 など）を貼り付けてください。
+            ダウンロードしてからスクリーンショットを生成します。
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="form-actions">
+
+        <button
+          type="submit"
+          class="primary submit-project"
+        >
+          案件を作成
+        </button>
+
+        <p class="form-actions-note">
+          動画を入れた場合は、作成後すぐにスクリーンショットの生成が始まります
+          （60秒の動画で20秒ほど）。
+        </p>
+
+      </div>
+
+    </form>
+
+  </section>
+
+
+  <!-- ========================================================
+       案件データベース
+       ======================================================== -->
+
+  <section class="card projects-card">
+
+
+    <!-- データベースヘッダー -->
+
+    <div class="database-header">
+
+      <div>
+
+        <h2>
+          案件データベース
+        </h2>
+
+        <div
+          id="projects-count"
+          class="database-count"
+        >
+          {{ projects|length }}件
+        </div>
+
+      </div>
+
+
+      <button
+        type="button"
+        id="project-filter-clear"
+        class="database-clear"
+      >
+        条件をクリア
+      </button>
+
+    </div>
+
+
+    <!-- ======================================================
+         Notion風検索バー
+         ====================================================== -->
+
+    <div class="database-toolbar">
+
+      <div class="database-search">
+
+        <span
+          class="database-search-icon"
+          aria-hidden="true"
+        >
+          ⌕
+        </span>
+
+        <input
+          type="search"
+          id="project-search"
+          placeholder="ジャンル、案件名、担当者を検索"
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <div class="database-toolbar-actions">
+
+        <button
+          type="button"
+          class="database-add-filter"
+          id="database-add-filter"
+        >
+          ＋ フィルター
+        </button>
+
+
+        <button
+          type="button"
+          class="database-sort-button"
+          id="database-sort-button"
+        >
+          ↕ 並べ替え
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- ======================================================
+         フィルター
+         ====================================================== -->
+
+    <div
+      id="database-filters"
+      class="database-filters"
+      hidden
+    >
+
+      <!-- ジャンル -->
+
+      <div
+        class="filter-chip"
+        data-filter="genre"
+        data-key="genre"
+      >
+
+        <button
+          type="button"
+          class="filter-chip-button"
+        >
+          <span>ジャンル</span>
+          <span class="filter-chip-count"></span>
+          <span class="filter-chip-caret">▾</span>
+        </button>
+
+        <div class="filter-panel" hidden>
+
+          {% if genres %}
+
+          {% for g in genres %}
+          <label class="filter-option">
+            <input
+              type="checkbox"
+              value="{{ g.genre }}"
+            >
+            <span>{{ g.genre }}</span>
+          </label>
+          {% endfor %}
+
+          {% else %}
+          <p class="filter-empty">まだジャンルがありません</p>
+          {% endif %}
+
+        </div>
+
+      </div>
+
+
+      <!-- 担当者 -->
+
+      <div
+        class="filter-chip"
+        data-filter="assignee"
+        data-key="assignee"
+      >
+
+        <button
+          type="button"
+          class="filter-chip-button"
+        >
+          <span>担当者</span>
+          <span class="filter-chip-count"></span>
+          <span class="filter-chip-caret">▾</span>
+        </button>
+
+        <div class="filter-panel" hidden>
+
+          {% if assignees %}
+
+          {% for a in assignees %}
+          <label class="filter-option">
+            <input
+              type="checkbox"
+              value="{{ a.assignee }}"
+            >
+            <span>{{ a.assignee }}</span>
+          </label>
+          {% endfor %}
+
+          {% else %}
+          <p class="filter-empty">まだ担当者がいません</p>
+          {% endif %}
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ======================================================
+         並べ替えパネル
+         ====================================================== -->
+
+    <div
+      id="database-sort-panel"
+      class="database-sort-panel"
+      hidden
+    >
+
+      <label>
+
+        <span>
+          並べ替え項目
+        </span>
+
+        <select id="database-sort-field">
+
+          <option value="">
+            なし
+          </option>
+
+          <option value="genre">
+            ジャンル
+          </option>
+
+          <option value="name">
+            案件名
+          </option>
+
+          <option value="assignee">
+            担当者
+          </option>
+
+          <option value="created">
+            初回登録日
+          </option>
+
+        </select>
+
+      </label>
+
+
+      <label>
+
+        <span>
+          順序
+        </span>
+
+        <select id="database-sort-direction">
+
+          <option value="asc">
+            昇順
+          </option>
+
+          <option value="desc">
+            降順
+          </option>
+
+        </select>
+
+      </label>
+
+    </div>
+
+
+    <!-- ======================================================
+         データベース表
+         ====================================================== -->
+
+    {% if projects %}
+
+    <div class="projects-table-wrap">
+
+      <table class="projects-table">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              ジャンル
+            </th>
+
+            <th>
+              案件名
+            </th>
+
+            <th>
+              担当者
+            </th>
+
+            <th>
+              バージョン
+            </th>
+
+            <th>
+              初回登録
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody id="projects-body">
+
+          {% for p in projects %}
+
+          <tr
+            class="project-row"
+            data-genre="{{ (p.genre or '')|lower }}"
+            data-project-name="{{ p.name|lower }}"
+            data-assignee="{{ (p.assignee or '')|lower }}"
+            data-versions="{{ (p.version_labels or '')|lower }}"
+            data-created="{{ p.created_at }}"
+            data-project-no="{{ (p.project_no or '')|lower }}"
+          >
+
+            <!-- ジャンル -->
+
+            <td>
+
+              {% if p.genre %}
+
+              <a
+                class="database-pill pill-c{{ genre_colors.get(p.genre, 0) }} is-link"
+                href="{{ url_for('genre_page', genre=p.genre) }}"
+                title="このジャンルの案件だけを見る"
+              >{{ p.genre }}</a>
+
+              {% else %}
+
+              <span class="muted">
+                —
+              </span>
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- 案件名 -->
+
+            <td class="project-name-cell">
+
+              <a
+                class="project-link"
+                href="{{ url_for(
+                  'project_page',
+                  key=p.slug or p.id
+                ) }}"
+              >{{ p.name }}</a>
+
+              {% if p.project_no %}
+              <span class="project-no">
+                {{ p.project_no }}
+              </span>
+              {% endif %}
+
+            </td>
+
+
+            <!-- 担当者 -->
+
+            <td>
+
+              {% if p.assignee %}
+
+              <a
+                class="database-pill pill-c{{ assignee_colors.get(p.assignee, 0) }} is-link"
+                href="{{ url_for('assignee_page', assignee=p.assignee) }}"
+                title="この担当者の案件だけを見る"
+              >{{ p.assignee }}</a>
+
+              {% else %}
+
+              <span class="muted">
+                —
+              </span>
+
+              {% endif %}
+
+            </td>
+
+
+            <!-- バージョン数 -->
+
+            <td class="database-number">
+
+              {{ p.video_count }}
+
+            </td>
+
+
+            <!-- 初回登録 -->
+
+            <td class="database-date">
+
+              {{ p.created_at }}
+
+            </td>
+
+          </tr>
+
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <div
+      id="projects-empty"
+      class="projects-empty"
+      hidden
+    >
+      条件に一致する案件がありません。
+    </div>
+
+
+    {% else %}
+
+    <div class="database-no-projects">
+
+      <div class="database-no-projects-title">
+        まだ案件がありません
+      </div>
+
+      <div class="muted">
+        上のフォームから最初の案件を作成してください。
+      </div>
+
+    </div>
+
+    {% endif %}
+
+
+  </section>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script src="{{ static_v('app.js') }}"></script>
+
+{% endblock %}

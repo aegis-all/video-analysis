@@ -1,0 +1,54 @@
+# =============================================================
+#  Render の設定
+#
+#  GitHub のリポジトリをつなぐと、この内容で組み立てられる。
+#  push するたびに自動で入れ替わる。
+#
+#  ※ 無料プランは「しばらく使わないと止まる」うえに
+#     保存領域（ディスク）を付けられない。
+#     動画とデータベースを置くので starter 以上が要る。
+# =============================================================
+
+services:
+  - type: web
+    name: video-analysis
+    runtime: python
+    plan: starter
+    region: singapore
+
+    buildCommand: pip install -r requirements.txt
+    startCommand: python serve.py
+
+    # ログイン画面は 200 を返すので、生きているかの確認に使う
+    healthCheckPath: /login
+
+    # 動画・スクショ・データベースの置き場。
+    # ここだけは入れ替えても消えない。
+    # 足りなくなったら Render の画面から増やせる（減らすことはできない）。
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 20
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+
+      # データの保存先をディスクに向ける
+      - key: VR_DATA_DIR
+        value: /var/data
+
+      # PaaS は外側から来るので、全部の口で待つ
+      - key: VR_BIND
+        value: 0.0.0.0
+
+      # Render が https を終端するので、その前提で URL を組み立てる
+      - key: VR_BEHIND_PROXY
+        value: "1"
+
+      - key: VR_HTTPS
+        value: "1"
+
+      # 動画のアップロード上限（MB）
+      - key: VR_MAX_UPLOAD_MB
+        value: "2048"
