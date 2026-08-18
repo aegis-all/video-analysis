@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ログイン — 動画分析</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1220'/%3E%3Cpath d='M8.5 8v11l9-5.5z' fill='%2322d3ee'/%3E%3Ccircle cx='20' cy='20' r='6' fill='none' stroke='%233b82f6' stroke-width='2.6'/%3E%3Cpath d='M24.4 24.4l3.1 3.1' stroke='%233b82f6' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-auth">
+
+  <div class="auth-wrap">
+
+    <div class="auth-brand">
+      <img class="auth-brand-mark" src="logo-mark.svg" alt="" width="60" height="60">
+      <div class="auth-brand-name">動画分析</div>
+      <div class="auth-brand-sub"><span>VIDEO ANALYSIS</span></div>
+    </div>
+
+    <div class="auth-card">
+
+      <h1 class="auth-title">ログイン</h1>
+
+      <p class="auth-note" id="note">
+        登録されているメールアドレスとパスワードを入れてください。
+      </p>
+
+      <p class="auth-error" id="error" hidden>
+        <span aria-hidden="true">!</span><span id="error-text"></span>
+      </p>
+
+      <form class="auth-form" id="form">
+
+        <label>
+          <span>メールアドレス</span>
+          <input type="email" id="email" autocomplete="username" required autofocus>
+        </label>
+
+        <label>
+          <span>パスワード</span>
+          <input type="password" id="password" autocomplete="current-password">
+        </label>
+
+        <button type="submit" class="primary auth-submit" id="submit">ログイン</button>
+
+      </form>
+
+      <p class="auth-sub">
+        <a href="#" id="send-link">パスワードが分からない／初めて使う</a>
+      </p>
+
+    </div>
+
+    <p class="auth-foot">社内利用のためのページです</p>
+
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    (function () {
+
+      const form = document.getElementById('form');
+      const box = document.getElementById('error');
+      const text = document.getElementById('error-text');
+      const note = document.getElementById('note');
+      const submit = document.getElementById('submit');
+
+      function show(message) {
+        text.textContent = message;
+        box.hidden = false;
+      }
+
+      function next() {
+        const q = new URLSearchParams(location.search).get('next');
+        /* 外のサイトへ飛ばされないよう、同じ場所の中だけ許す */
+        return (q && !q.startsWith('http') && !q.startsWith('//'))
+          ? q : 'index.html';
+      }
+
+      /* すでに入っていれば素通し */
+      API.Auth.user().then(function (user) {
+        if (user) { location.replace(next()); }
+      });
+
+      /* メールのリンクで戻ってきたときも素通し */
+      API.db.auth.onAuthStateChange(function (event) {
+        if (event === 'SIGNED_IN') { location.replace(next()); }
+      });
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        box.hidden = true;
+        submit.disabled = true;
+
+        try {
+          await API.Auth.signIn(
+            document.getElementById('email').value.trim(),
+            document.getElementById('password').value
+          );
+          location.replace(next());
+        } catch (err) {
+          show(err.message.includes('Invalid login')
+            ? 'メールアドレスかパスワードが違います。'
+            : err.message);
+          submit.disabled = false;
+        }
+      });
+
+      document.getElementById('send-link').addEventListener('click', async function (e) {
+        e.preventDefault();
+        box.hidden = true;
+
+        const email = document.getElementById('email').value.trim();
+
+        if (!email) {
+          show('先にメールアドレスを入れてください。');
+          return;
+        }
+
+        try {
+          await API.Auth.sendLink(email);
+          note.textContent =
+            email + ' にログイン用のリンクを送りました。'
+            + 'メールを開いてリンクを押してください。';
+        } catch (err) {
+          show(err.message);
+        }
+      });
+
+    }());
+  </script>
+
+</body>
+</html>

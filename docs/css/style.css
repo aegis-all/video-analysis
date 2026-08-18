@@ -1,0 +1,5346 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: #f4f6f8;
+    color: #1f2937;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        Meiryo,
+        sans-serif;
+}
+
+body {
+    min-height: 100vh;
+}
+
+/* =========================================================
+   共通
+   ========================================================= */
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.muted {
+    color: #6b7280;
+}
+
+/* =========================================================
+   ヘッダー
+   ========================================================= */
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+
+    height: 64px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 28px;
+
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.project-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+}
+
+/* =========================================================
+   メイン
+   ========================================================= */
+
+main {
+    width: 100%;
+}
+
+.content,
+.container {
+    width: min(1600px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 28px 0 60px;
+}
+
+/* project.html が直接 content ブロックを使う場合 */
+.project {
+    width: min(1800px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 24px 0 60px;
+}
+
+/* =========================================================
+   ツールバー
+   ========================================================= */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    margin-bottom: 20px;
+    padding: 16px 18px;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+}
+
+.version-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+select,
+input[type="text"],
+input[type="file"] {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #111827;
+}
+
+select {
+    min-width: 160px;
+    padding: 9px 12px;
+}
+
+input[type="text"] {
+    padding: 10px 12px;
+}
+
+input[type="file"] {
+    padding: 8px;
+}
+
+/* =========================================================
+   ボタン
+   ========================================================= */
+
+button {
+    border: 0;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-weight: 600;
+}
+
+button.primary,
+.primary {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+button.primary:hover,
+.primary:hover {
+    background: #1d4ed8;
+}
+
+button.danger,
+.danger {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+button.danger:hover,
+.danger:hover {
+    background: #b91c1c;
+}
+
+.seek {
+    min-width: 70px;
+
+    background: #eff6ff;
+    color: #2563eb;
+
+    border: 1px solid #bfdbfe;
+}
+
+.seek:hover {
+    background: #dbeafe;
+}
+
+
+/* =========================================================
+   パネル
+   ========================================================= */
+
+.panel {
+    margin-bottom: 20px;
+    padding: 22px;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+}
+
+.panel h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+.panel.error {
+    border-color: #fecaca;
+    background: #fff7f7;
+}
+
+.panel.error pre {
+    white-space: pre-wrap;
+    overflow-x: auto;
+
+    padding: 14px;
+
+    background: #ffffff;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+}
+
+/* =========================================================
+   処理中
+   ========================================================= */
+
+.processing {
+    text-align: center;
+}
+
+.bar {
+    width: 100%;
+    height: 12px;
+
+    margin: 18px 0;
+
+    overflow: hidden;
+
+    background: #e5e7eb;
+    border-radius: 999px;
+}
+
+.bar-fill {
+    height: 100%;
+
+    background: linear-gradient(
+        90deg,
+        #2563eb,
+        #60a5fa
+    );
+
+    border-radius: 999px;
+
+    transition: width 0.4s ease;
+}
+
+/* =========================================================
+   動画プレイヤー
+   ========================================================= */
+
+.player-wrap {
+    margin-bottom: 24px;
+    padding: 18px;
+
+    background: #111827;
+    border-radius: 16px;
+
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+}
+
+#player {
+    display: block;
+
+    width: 100%;
+    max-height: 600px;
+
+    margin: 0 auto;
+
+    background: #000000;
+    border-radius: 10px;
+}
+
+.player-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: 12px;
+
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.player-meta .file {
+    margin-left: 12px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    color: #cbd5e1;
+}
+
+/* =========================================================
+   表
+   ========================================================= */
+
+.table-wrap {
+    width: 100%;
+
+    overflow-x: auto;
+    overflow-y: visible;
+
+    background: #ffffff;
+
+    border: 1px solid #dfe3e8;
+    border-radius: 14px;
+
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.07);
+}
+
+/*
+  横スクロールできる大きなレビュー表
+*/
+
+.sheet {
+    width: max-content;
+    min-width: 100%;
+
+    border-collapse: separate;
+    border-spacing: 0;
+
+    background: #ffffff;
+
+    font-size: 13px;
+}
+
+/* =========================================================
+   表ヘッダー
+   ========================================================= */
+
+.sheet thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+
+    height: 52px;
+
+    padding: 10px 12px;
+
+    text-align: center;
+    vertical-align: middle;
+
+    border-right: 1px solid #dbe1e8;
+    border-bottom: 1px solid #cfd6df;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+/* ---------------------------------------------------------
+   テキスト列の見出し：題名の下に合計秒数を出す
+   --------------------------------------------------------- */
+
+.sheet thead th .th-label {
+    display: block;
+    line-height: 1.2;
+}
+
+.sheet thead th .th-total {
+    display: block;
+
+    margin-top: 2px;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    color: #1a6bd4;
+
+    letter-spacing: 0.01em;
+}
+
+.sheet thead th .th-total strong {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.reference-group {
+    background: #eef5ff;
+    color: #1e40af;
+}
+
+.result-group {
+    background: #f1fdf5;
+    color: #166534;
+}
+
+.result-start {
+    border-left: 3px solid #94a3b8 !important;
+}
+
+/* =========================================================
+   列幅
+   ========================================================= */
+
+.c-num {
+    width: 55px;
+    min-width: 55px;
+    max-width: 55px;
+}
+
+.c-shot {
+    width: 210px;
+    min-width: 210px;
+}
+
+.c-time {
+    width: 90px;
+    min-width: 90px;
+}
+
+.sheet th:not(.c-num):not(.c-shot):not(.c-time),
+.sheet td:not(.c-num):not(.c-shot):not(.c-time) {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+}
+
+/* =========================================================
+   表の行
+   ========================================================= */
+
+.sheet tbody tr {
+    background: #ffffff;
+}
+
+.sheet tbody tr:nth-child(even) {
+    background: #fafbfc;
+}
+
+.sheet tbody tr:hover {
+    background: #f8fbff;
+}
+
+.sheet td {
+    padding: 10px;
+
+    vertical-align: top;
+
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* =========================================================
+   ナンバー
+   ========================================================= */
+
+.sheet .c-num {
+    text-align: center;
+    vertical-align: middle;
+
+    font-size: 15px;
+    font-weight: 700;
+
+    color: #475569;
+
+    background: #f8fafc;
+}
+
+/* =========================================================
+   スクショ
+   ========================================================= */
+
+.sheet .c-shot {
+    text-align: center;
+    vertical-align: middle;
+
+    background: #f8fafc;
+}
+
+.sheet .c-shot img {
+    display: block;
+
+    width: 180px;
+    height: 320px;
+
+    margin: 0 auto;
+
+    object-fit: contain;
+
+    border-radius: 10px;
+
+    border: 1px solid #d1d5db;
+
+    background: #f1f5f9;
+
+    cursor: zoom-in;
+
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.sheet .c-shot img:hover {
+    transform: scale(1.025);
+
+    box-shadow:
+        0 5px 15px rgba(15, 23, 42, 0.18);
+}
+
+/* =========================================================
+   秒数
+   ========================================================= */
+
+.sheet .c-time {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* =========================================================
+   テキスト入力
+   ========================================================= */
+
+.sheet textarea {
+    display: block;
+
+    width: 100%;
+    min-height: 90px;
+
+    padding: 10px 11px;
+
+    resize: vertical;
+
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+
+    background: #ffffff;
+    color: #111827;
+
+    outline: none;
+
+    line-height: 1.55;
+
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease;
+}
+
+.sheet textarea::placeholder {
+    color: #9ca3af;
+}
+
+.sheet textarea:hover {
+    border-color: #9ca3af;
+}
+
+.sheet textarea:focus {
+    border-color: #3b82f6;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+/* 自動保存中 */
+.sheet textarea.saving {
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+
+/* 保存済み */
+.sheet textarea.saved {
+    border-color: #22c55e;
+    background: #f0fdf4;
+}
+
+/* 保存失敗 */
+.sheet textarea.failed {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+/* =========================================================
+   ライトボックス
+   ========================================================= */
+
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 30px;
+
+    background: rgba(15, 23, 42, 0.82);
+
+    cursor: zoom-out;
+}
+
+.lightbox img {
+    max-width: 95vw;
+    max-height: 90vh;
+
+    object-fit: contain;
+
+    border-radius: 10px;
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+/* =========================================================
+   トースト
+   ========================================================= */
+
+.toast {
+    position: fixed;
+
+    right: 24px;
+    bottom: 24px;
+
+    z-index: 2000;
+
+    max-width: 420px;
+
+    padding: 13px 18px;
+
+    background: #111827;
+    color: #ffffff;
+
+    border-radius: 10px;
+
+    box-shadow:
+        0 8px 25px rgba(15, 23, 42, 0.25);
+
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.toast.error {
+    background: #b91c1c;
+}
+
+/* =========================================================
+   空表示
+   ========================================================= */
+
+.pad {
+    padding: 30px;
+    text-align: center;
+}
+
+/* =========================================================
+   トップページ用
+   ========================================================= */
+
+.projects {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(280px, 1fr));
+
+    gap: 18px;
+}
+
+.project-card {
+    padding: 20px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+
+    box-shadow:
+        0 3px 12px rgba(15, 23, 42, 0.05);
+}
+
+.project-card:hover {
+    border-color: #bfdbfe;
+
+    box-shadow:
+        0 6px 20px rgba(37, 99, 235, 0.10);
+}
+
+/* =========================================================
+   スマホ
+   ========================================================= */
+
+@media (max-width: 800px) {
+
+    .topbar {
+        padding: 0 16px;
+    }
+
+    .project {
+        width: calc(100% - 20px);
+        padding-top: 12px;
+    }
+
+    .toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .version-picker {
+        justify-content: space-between;
+    }
+
+
+    .player-wrap {
+        padding: 10px;
+        border-radius: 10px;
+    }
+
+    #player {
+        max-height: 300px;
+    }
+
+    .sheet thead th {
+        position: static;
+    }
+}
+/* 非表示指定されたライトボックスは絶対に表示しない */
+.lightbox[hidden] {
+    display: none !important;
+}
+
+/* 非表示指定されたトーストも表示しない */
+.toast[hidden] {
+    display: none !important;
+}
+
+/* =========================================================
+   トップページの配置調整
+   ========================================================= */
+
+.page {
+    width: min(1100px, calc(100% - 80px));
+    margin: 0 auto;
+    padding: 32px 0 60px;
+}
+
+.page .card {
+    width: 100%;
+    margin-bottom: 24px;
+    padding: 24px 28px;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+}
+
+.page .card h2 {
+    margin-top: 0;
+    margin-bottom: 22px;
+}
+
+.page .field {
+    margin-bottom: 18px;
+}
+
+.page .field label {
+    display: block;
+    margin-bottom: 7px;
+    font-weight: 600;
+}
+
+.page .field input[type="text"],
+.page .field input[type="file"] {
+    width: 100%;
+}
+
+.page .upload-form {
+    width: 100%;
+}
+
+@media (max-width: 800px) {
+    .page {
+        width: calc(100% - 32px);
+        padding-top: 20px;
+    }
+
+    .page .card {
+        padding: 20px;
+    }
+}
+
+/* =========================================================
+   レビュー表：見出し固定 + キャプチャ列固定
+   ========================================================= */
+
+/* 表の見出しを縦スクロール時に固定 */
+.table-wrap {
+    overflow: auto;
+    max-height: calc(100vh - 150px);
+}
+
+.sheet thead th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+/* =========================================================
+   左端の番号列を固定
+   ========================================================= */
+
+.sheet .c-num {
+    position: sticky;
+    left: 0;
+    z-index: 30;
+
+    background: #f8fafc;
+}
+
+/* =========================================================
+   キャプチャ画面列を固定
+   ========================================================= */
+
+.sheet .c-shot {
+    position: sticky;
+    left: 55px;
+    z-index: 25;
+
+    background: #f8fafc;
+}
+
+/* キャプチャ列の見出しは最前面 */
+.sheet thead .c-num {
+    z-index: 40;
+}
+
+.sheet thead .c-shot {
+    z-index: 40;
+}
+
+/* 固定列と通常列の境界を少し分かりやすくする */
+.sheet .c-shot {
+    border-right: 2px solid #cbd5e1;
+}
+
+/* 固定列の影 */
+.sheet .c-shot::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -8px;
+    width: 8px;
+    height: 100%;
+    pointer-events: none;
+    box-shadow: 4px 0 8px rgba(15, 23, 42, 0.08);
+}
+
+/* =========================================================
+   スプレッドシート風デザイン
+   ========================================================= */
+
+.sheet {
+    --sheet-header: #fff2b2;
+    --sheet-group: #ffd966;
+    --sheet-row: #fff9e6;
+    --sheet-row-alt: #ffffff;
+    --sheet-hover: #fff1c7;
+    --sheet-border: #d9d9d9;
+
+    background: #ffffff;
+}
+
+.sheet thead th {
+    background: var(--sheet-header);
+    color: #222222;
+    border-right: 1px solid var(--sheet-border);
+    border-bottom: 1px solid #b7b7b7;
+    font-weight: 700;
+}
+
+.sheet thead tr:first-child th {
+    background: var(--sheet-group);
+}
+
+.sheet tbody tr {
+    background: var(--sheet-row);
+}
+
+.sheet tbody tr:nth-child(even) {
+    background: var(--sheet-row-alt);
+}
+
+.sheet tbody tr:hover {
+    background: var(--sheet-hover);
+}
+
+.sheet td {
+    border-right: 1px solid var(--sheet-border);
+    border-bottom: 1px solid var(--sheet-border);
+}
+
+.sheet .c-num,
+.sheet .c-shot {
+    background: inherit;
+}
+
+.sheet .c-num {
+    font-weight: 700;
+    color: #333333;
+}
+
+.table-wrap {
+    border-color: #bfbfbf;
+}
+/* 表ズーム操作 */
+
+.sheet-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    margin-bottom: 10px;
+    padding: 7px 10px;
+
+    width: fit-content;
+
+    background: #ffffff;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+    font-size: 13px;
+}
+
+.sheet-zoom-label {
+    margin-right: 4px;
+    font-weight: 700;
+}
+
+.sheet-zoom-controls button {
+    min-width: 32px;
+    height: 30px;
+
+    padding: 2px 8px;
+
+    background: #fff2b2;
+    color: #222222;
+
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+
+    font-weight: 700;
+}
+
+.sheet-zoom-controls button:hover {
+    background: #ffd966;
+}
+
+.sheet-zoom-value {
+    min-width: 48px;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* =========================================================
+   一覧の絞り込み（検索・フィルター・並べ替え）
+   ========================================================= */
+
+.database-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    margin: 0 0 14px;
+}
+
+.filter-chip {
+    position: relative;
+}
+
+.filter-chip-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 7px 12px;
+
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.filter-chip-button:hover {
+    background: #f9fafb;
+}
+
+.filter-chip.active .filter-chip-button {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+}
+
+.filter-chip-count {
+    min-width: 18px;
+    padding: 1px 6px;
+
+    background: #2563eb;
+    color: #ffffff;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+    text-align: center;
+}
+
+.filter-chip-caret {
+    color: #9ca3af;
+    font-size: 11px;
+}
+
+.filter-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 50;
+
+    min-width: 190px;
+    max-height: 280px;
+    overflow-y: auto;
+
+    padding: 6px;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 7px 9px;
+
+    border-radius: 6px;
+
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.filter-option:hover {
+    background: #f3f4f6;
+}
+
+.filter-option input {
+    accent-color: #2563eb;
+}
+
+.filter-empty {
+    margin: 0;
+    padding: 10px;
+
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.database-add-filter.active,
+.database-sort-button.active {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+}
+
+.database-sort-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+
+    margin: 0 0 14px;
+    padding: 14px;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.database-sort-panel label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* =========================================================
+   微調整
+   ========================================================= */
+
+/*
+   動画プレイヤーを上部に固定する。
+
+   これまでは position: static で高さ 667px あったため、
+   表を少しスクロールすると動画が画面から消え、
+   「動画を見ながら入力する」ができなかった。
+
+   縦型（9:16）は縦に伸びて画面を占有してしまうので、
+   高さを抑えて横並びにし、常に見える状態にする。
+*/
+
+.player-wrap {
+    position: sticky;
+    top: 64px; /* トップバーの高さ */
+    z-index: 40;
+
+    display: flex;
+    align-items: center;
+    gap: 20px;
+
+    margin-bottom: 16px;
+    padding: 12px 18px;
+}
+
+#player {
+    width: auto;
+    max-width: 42%;
+    max-height: 240px;
+
+    margin: 0;
+}
+
+.player-meta {
+    flex: 1;
+    min-width: 0;
+
+    margin-top: 0;
+}
+
+/*
+   改修1：ページ全体を普通に縦スクロールさせる。
+
+   これまでは画面の高さを配り切って「表だけがスクロールする」形にしていたが、
+   プレイヤーを大きくすると、そのぶん表の枠が縮んで入力欄が潰れていた。
+
+   ふつうの Web ページと同じように、
+     プレイヤーが大きい → 下にスクロール → 入力フォーム
+   という流れにする。表の高さは中身なりに伸ばし、上限を設けない。
+*/
+
+body.page-project {
+    height: auto;
+    overflow: visible;
+}
+
+body.page-project main {
+    height: auto;
+    overflow: visible;
+}
+
+body.page-project .project {
+    height: auto;
+    padding-top: 16px;
+    padding-bottom: 40px;
+}
+
+body.page-project .table-wrap {
+    max-height: none;
+
+    /* 横に長い表なので横スクロールだけ残す */
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+/*
+   1行あたりの高さを下げる。
+
+   180×320 の画像だと 1行 342px になり、43行で 14,700px を超えていた。
+   細部はクリックで拡大して確認する運用にして、一覧では俯瞰を優先する。
+*/
+
+.sheet .c-shot img {
+    width: 124px;
+    height: 220px;
+}
+
+.c-shot {
+    width: 150px;
+    min-width: 150px;
+}
+
+.sheet .c-shot {
+    left: 55px;
+}
+
+/* 入力欄も行の高さに合わせて詰める */
+.sheet textarea {
+    min-height: 74px;
+}
+
+.sheet td {
+    vertical-align: top;
+}
+
+/*
+   色みを少し落ち着かせる。
+   黄色が強いと長時間の入力作業で目が疲れるため、
+   スプレッドシートらしさは保ったまま彩度だけ下げる。
+*/
+
+.sheet {
+    --sheet-header: #fdf6d8;
+    --sheet-group: #f7e3a1;
+    --sheet-row: #fffdf6;
+    --sheet-hover: #fdf3d4;
+}
+
+/*
+   案件画面の上部を詰めて、表に使える高さを増やす。
+
+   プレイヤーは縦型（9:16）なので横幅いっぱいの黒い帯にすると
+   右側が大きく空いてしまう。中身のぶんだけの幅にとどめる。
+*/
+
+/* いまはプレイヤーを fixed で浮かせているため、
+   ここでの幅・余白の指定は使わない（下の「改修1」側で決める）。 */
+
+body.page-project #player {
+    max-height: 200px;
+    max-width: none;
+}
+
+body.page-project .toolbar {
+    margin-bottom: 10px;
+    padding: 10px 14px;
+}
+
+body.page-project .project-info-card {
+    margin-bottom: 10px;
+}
+
+body.page-project .panel {
+    margin-bottom: 10px;
+}
+
+/*
+   1画面に表示できる行数を増やす。
+
+   キャプチャを 124×220 にしていたが、上部（案件情報＋バージョン＋
+   プレイヤー＋表示倍率）で 548px 使うため、表に 2 行しか入らなかった。
+   キャプチャを一回り小さくし、プレイヤーの高さも抑える。
+   細部はクリックで拡大、全体の大きさは「表示倍率」で調整できる。
+*/
+
+.sheet .c-shot img {
+    width: 96px;
+    height: 170px;
+}
+
+.c-shot {
+    width: 122px;
+    min-width: 122px;
+}
+
+body.page-project #player {
+    max-height: 168px;
+}
+
+body.page-project .sheet textarea {
+    min-height: 62px;
+}
+
+/*
+   上部を2カラムにして、表に使える高さを増やす。
+
+   縦積みだと 案件情報(78) + バージョン(63) + プレイヤー(188) + 表示倍率(46)
+   ＝ 約 420px を消費し、表に 2 行しか入らなかった。
+   プレイヤーは縦型で横に余白が余るので、右側の列へ逃がす。
+   左列（案件情報・バージョン・表示倍率）の合計とほぼ同じ高さに収まり、
+   その分がまるごと表の高さになる。
+*/
+
+body.page-project .project {
+    display: grid;
+
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto auto 1fr;
+
+    grid-template-areas:
+        "info   player"
+        "tools  player"
+        "panel  player"
+        "zoom   player"
+        "table  table";
+
+    column-gap: 14px;
+}
+
+body.page-project .project-info-card {
+    grid-area: info;
+}
+
+body.page-project .toolbar {
+    grid-area: tools;
+}
+
+body.page-project .panel {
+    grid-area: panel;
+}
+
+/* グリッド配置も不要になった（fixed のため） */
+
+body.page-project .sheet-zoom-controls {
+    grid-area: zoom;
+}
+
+body.page-project .table-wrap {
+    grid-area: table;
+}
+
+/* 左列（案件情報＋バージョン＋表示倍率）とほぼ同じ高さに揃える。
+   これより高くするとプレイヤーが上部の高さを決めてしまい、表が狭くなる。 */
+body.page-project #player {
+    max-height: 196px;
+}
+
+/* 画面が狭いときは元の縦積みに戻す */
+@media (max-width: 1100px) {
+    body.page-project .project {
+        display: flex;
+        flex-direction: column;
+    }
+
+    body.page-project #player {
+        max-height: 168px;
+    }
+}
+
+/* =========================================================
+   改修1・4：動画プレイヤーの大きさ調整
+   ========================================================= */
+
+/*
+   大きさはスライダーが --player-size（vh）に入れる。
+   既定は 65%（＝約 41vh）で、これまでの 196px より大幅に大きい。
+*/
+
+body.page-project #player {
+    width: auto;
+    max-width: 100%;
+    max-height: var(--player-size, 41vh);
+}
+
+/* プレイヤーが大きくなっても左側が潰れないようにする */
+body.page-project .project {
+    grid-template-columns: minmax(320px, 1fr) auto;
+}
+
+.player-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: 10px;
+
+    color: #cbd5e1;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.player-size label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.player-size input[type="range"] {
+    width: 116px;
+    accent-color: #60a5fa;
+    cursor: pointer;
+}
+
+/* 縦並びのときはメタ情報を縦に積む */
+.player-meta {
+    flex-wrap: wrap;
+}
+
+
+/* =========================================================
+   改修2：素材欄を Notion のテキストボックス風にする
+   ========================================================= */
+
+.material-editor {
+    min-height: 62px;
+
+    padding: 9px 11px;
+
+    background: #ffffff;
+
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+
+    color: #111827;
+    font-size: 13px;
+    line-height: 1.65;
+
+    overflow-wrap: anywhere;
+
+    transition:
+        border-color 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+.material-editor:hover {
+    border-color: #9ca3af;
+}
+
+.material-editor:focus {
+    outline: none;
+
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* 空のときだけ薄い案内文を出す（JS が is-empty を付ける） */
+.material-editor.is-empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+}
+
+.material-editor img {
+    display: block;
+
+    max-width: 100%;
+    height: auto;
+
+    margin: 6px 0;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+/* 保存状態の色分けは textarea と揃える */
+.material-editor.saving {
+    border-color: #d9a441;
+}
+
+.material-editor.saved {
+    border-color: #2da44e;
+}
+
+.material-editor.failed {
+    border-color: #dc2626;
+    background: #fef2f2;
+}
+
+/* =========================================================
+   改修3：一覧の検索・フィルター UI
+   ========================================================= */
+
+/*
+   これまで .database-* にスタイルが1つも無く、
+   検索欄もボタンも素のまま並んでいた。
+   Notion のテーブル UI を参考に、薄いグレーの帯に収めて整理する。
+*/
+
+.database-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+
+    margin-bottom: 14px;
+}
+
+.database-header h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.database-count {
+    margin-top: 3px;
+
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.database-clear {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+
+    padding: 7px 12px;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.database-clear:hover {
+    background: #f3f4f6;
+}
+
+/* --- 検索バー --- */
+
+.database-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-bottom: 12px;
+    padding: 12px 14px;
+
+    background: #f5f5f5;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+
+.database-search {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+.database-search-icon {
+    position: absolute;
+    top: 50%;
+    left: 11px;
+    transform: translateY(-50%);
+
+    color: #9ca3af;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+.database-search input {
+    width: 100%;
+
+    padding: 9px 12px 9px 30px;
+
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+
+    font-size: 13px;
+}
+
+.database-search input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.database-toolbar-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.database-add-filter,
+.database-sort-button {
+    padding: 8px 13px;
+
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.database-add-filter:hover,
+.database-sort-button:hover {
+    background: #f3f4f6;
+}
+
+/* --- 一覧テーブル --- */
+
+.projects-table-wrap {
+    overflow-x: auto;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+
+.projects-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    font-size: 13px;
+}
+
+.projects-table th {
+    padding: 10px 14px;
+
+    background: #f5f5f5;
+    border-bottom: 1px solid #e5e7eb;
+
+    color: #4b5563;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.projects-table td {
+    padding: 11px 14px;
+
+    border-bottom: 1px solid #f0f1f3;
+
+    vertical-align: middle;
+}
+
+.projects-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.projects-table tbody tr:hover {
+    background: #f9fafb;
+    cursor: pointer;
+}
+
+.project-name-cell a {
+    color: #111827;
+    font-weight: 600;
+}
+
+.project-name-cell a:hover {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.database-pill {
+    display: inline-block;
+
+    padding: 3px 9px;
+
+    background: #eef2ff;
+    border-radius: 999px;
+
+    color: #3730a3;
+    font-size: 12px;
+}
+
+/* ---------------------------------------------------------
+   ジャンル／担当者のラベル色
+
+   値ごとに自動で色が割り当てられる（app.py の _color_map）。
+   ここのクラス数は PILL_COLOR_COUNT と揃えること。
+   --------------------------------------------------------- */
+
+.database-pill.pill-c0  { background: #fee2e2; color: #991b1b; }
+.database-pill.pill-c1  { background: #ffedd5; color: #9a3412; }
+.database-pill.pill-c2  { background: #fef3c7; color: #92400e; }
+.database-pill.pill-c3  { background: #ecfccb; color: #3f6212; }
+.database-pill.pill-c4  { background: #dcfce7; color: #166534; }
+.database-pill.pill-c5  { background: #ccfbf1; color: #115e59; }
+.database-pill.pill-c6  { background: #cffafe; color: #155e75; }
+.database-pill.pill-c7  { background: #dbeafe; color: #1e40af; }
+.database-pill.pill-c8  { background: #e0e7ff; color: #3730a3; }
+.database-pill.pill-c9  { background: #ede9fe; color: #5b21b6; }
+.database-pill.pill-c10 { background: #fce7f3; color: #9d174d; }
+.database-pill.pill-c11 { background: #e7e5e4; color: #57534e; }
+
+
+#projects-empty {
+    padding: 28px;
+
+    color: #9ca3af;
+    font-size: 13px;
+    text-align: center;
+}
+
+/*
+   hidden 属性が効くようにする。
+
+   .database-filters と .database-sort-panel に display:flex を指定したため、
+   ブラウザ標準の [hidden]{display:none} が打ち消され、
+   「＋フィルター」を押す前から開いた状態で表示されていた。
+*/
+
+.database-filters[hidden],
+.database-sort-panel[hidden],
+.filter-panel[hidden] {
+    display: none;
+}
+
+/* =========================================================
+   追加機能2：バージョンのタイムライン
+   ========================================================= */
+
+.version-timeline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    min-width: 0;
+}
+
+.version-arrow {
+    color: #9ca3af;
+    font-size: 14px;
+    user-select: none;
+}
+
+.version-step {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
+    padding: 7px 13px;
+
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+
+    color: #374151;
+    white-space: nowrap;
+
+    transition:
+        border-color 0.12s ease,
+        background 0.12s ease;
+}
+
+.version-step:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.version-step-label {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.version-step-date {
+    color: #9ca3af;
+    font-size: 11px;
+}
+
+/* いま開いているバージョン */
+.version-step.is-current {
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #1d4ed8;
+
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.version-step.is-current .version-step-date {
+    color: #60a5fa;
+}
+
+/* 生成中・失敗 */
+.version-step.is-working {
+    border-style: dashed;
+}
+
+.version-step.is-error {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+}
+
+/* =========================================================
+   改修2・3・4：素材欄の画像
+   ========================================================= */
+
+/*
+   改修3：セルは画像に合わせて自動で高くなる。
+
+   .material-editor は contenteditable の div なので、
+   高さを固定せず min-height だけにしておけば中身なりに伸びる。
+   画像を複数貼っても、すべて入る高さまでセルが広がる。
+*/
+
+.material-editor {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+}
+
+/*
+   改修4：右下の角をつかんで幅を変えられるようにする。
+   幅は img の style 属性に入り、素材欄の HTML ごと保存される。
+*/
+
+.material-editor img {
+    display: block;
+
+    /* 幅の指定が無い画像は列幅に収める。
+       ドラッグで幅を決めた画像は style 側の指定が優先される。 */
+    max-width: 100%;
+    height: auto;
+
+    margin: 6px 0;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+
+    cursor: zoom-in;
+}
+
+.material-editor img:hover {
+    border-color: #93c5fd;
+}
+
+/* ドラッグ中は選択やカーソルのちらつきを止める */
+body.is-resizing-image {
+    user-select: none;
+    cursor: nwse-resize;
+}
+
+body.is-resizing-image .material-editor img {
+    cursor: nwse-resize;
+}
+
+/* 改修2：拡大表示の閉じるボタン */
+
+.lightbox-close {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+
+    width: 40px;
+    height: 40px;
+
+    padding: 0;
+
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+
+    color: #ffffff;
+    font-size: 22px;
+    line-height: 1;
+
+    cursor: pointer;
+}
+
+.lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+/*
+   ドラッグで幅を決めた画像は、その幅を優先する。
+
+   max-width:100% を効かせたままだと、列より大きくしようとしても
+   列の幅で頭打ちになり「大きくできない」状態になる。
+   表は width:max-content なので、画像を広げれば列も一緒に広がる。
+*/
+
+.material-editor img[style*="width"] {
+    max-width: none;
+}
+
+/*
+   素材の列だけは、貼った画像の大きさに合わせて広がるようにする。
+
+   入力欄の列は width/min-width/max-width とも 220px 固定になっているため、
+   画像を大きくしてもセルからはみ出してしまう。
+   素材の列は上限を外し、中身なりに広がれるようにする（改修3・4）。
+*/
+
+/* 既存の入力欄の列指定（:not() 3連）より詳細度を高くする必要がある */
+.sheet th.material-cell:not(.c-num):not(.c-shot):not(.c-time),
+.sheet td.material-cell:not(.c-num):not(.c-shot):not(.c-time) {
+    width: auto;
+    min-width: 220px;
+    max-width: none;
+}
+
+.sheet td.material-cell .material-editor {
+    max-width: none;
+}
+
+/* =========================================================
+   改修1：動画プレイヤーを画面に固定する
+   ========================================================= */
+
+/*
+   プレイヤーを position: fixed にして、スクロールしても
+   画面右上に浮かんだままにする（Zoom の操作パネルのような形）。
+
+   fixed にすると文書の流れから外れるので、
+   上部の2カラム構成をやめて左側を全幅で使う。
+   表が広く使えるようになる。
+*/
+
+body.page-project .project {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 浮いているプレイヤーに隠れないよう、上部の要素だけ右側を空ける */
+body.page-project .project-info-card,
+body.page-project .toolbar {
+    margin-right: var(--player-reserve, 0px);
+}
+
+body.page-project .player-wrap {
+    /* 操作バー → 動画 → 情報 の順に縦に積む。
+       以前の横並び（display:flex の行方向）が残っていると
+       バーが動画の左に回り込んでしまう。 */
+    display: block;
+
+    position: fixed;
+    top: 76px;
+    right: 20px;
+    z-index: 200;
+
+    width: auto;
+    max-width: min(46vw, 560px);
+
+    padding: 0 0 10px;
+
+    background: #111827;
+    border: 1px solid #334155;
+    border-radius: 12px;
+
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
+}
+
+/* --- 操作バー --- */
+
+.player-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    padding: 7px 8px 7px 12px;
+
+    border-bottom: 1px solid #1f2937;
+
+    cursor: grab;
+    user-select: none;
+}
+
+.player-bar:active {
+    cursor: grabbing;
+}
+
+.player-bar-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    color: #e2e8f0;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.player-bar-actions {
+    display: flex;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.player-bar-btn {
+    width: 26px;
+    height: 26px;
+
+    padding: 0;
+
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+
+    color: #cbd5e1;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.player-bar-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+/* 通常表示のときは「元に戻す」を出さない */
+.player-wrap[data-mode="float"] #player-restore {
+    display: none;
+}
+
+body.page-project #player {
+    display: block;
+
+    width: auto;
+    max-width: 100%;
+    max-height: var(--player-size, 41vh);
+
+    margin: 10px auto 0;
+}
+
+.player-meta {
+    padding: 0 12px;
+}
+
+/* --- 最小化 --- */
+
+body.page-project .player-wrap[data-mode="mini"] {
+    top: auto;
+    bottom: 20px;
+    right: 20px;
+
+    width: 210px;
+    max-width: 210px;
+}
+
+.player-wrap[data-mode="mini"] #player {
+    max-height: 190px;
+    margin-top: 8px;
+}
+
+/* 最小化中は細かい情報とサイズ調整を隠す */
+.player-wrap[data-mode="mini"] .player-meta .file,
+.player-wrap[data-mode="mini"] .player-size,
+.player-wrap[data-mode="mini"] #player-min {
+    display: none;
+}
+
+.player-wrap[data-mode="mini"] .player-meta {
+    padding: 6px 10px 0;
+    font-size: 11px;
+}
+
+/* --- 非表示 --- */
+
+body.page-project .player-wrap[data-mode="hidden"] {
+    display: none;
+}
+
+.player-show {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 200;
+
+    padding: 10px 16px;
+
+    background: #111827;
+    border: 1px solid #334155;
+    border-radius: 999px;
+
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+}
+
+.player-show:hover {
+    background: #1f2937;
+}
+
+/* ドラッグ中は選択を止める */
+body.is-moving-player {
+    user-select: none;
+}
+
+/* 画面が狭いときは重なりすぎるので小さめに */
+@media (max-width: 1100px) {
+    .player-wrap {
+        max-width: 60vw;
+    }
+}
+
+/* =========================================================
+   素材画像のつまみ（トリミングと同じ操作）
+   ========================================================= */
+
+/*
+   画像をクリックすると、その上に枠と四隅のつまみを重ねる。
+
+   素材欄は contenteditable で、その HTML がそのまま保存されるため、
+   つまみを欄の中に入れると保存内容が汚れてしまう。
+   そこで body 直下に置いて、画像の位置に合わせて重ねている。
+*/
+
+.img-resizer {
+    position: fixed;
+    z-index: 900;
+
+    pointer-events: none;   /* 画像側の操作を邪魔しない */
+
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
+.img-handle {
+    position: absolute;
+
+    width: 12px;
+    height: 12px;
+
+    background: #ffffff;
+    border: 2px solid #2563eb;
+    border-radius: 3px;
+
+    pointer-events: auto;   /* つまみだけは操作できる */
+}
+
+.img-handle[data-dir="nw"] {
+    top: -7px;
+    left: -7px;
+    cursor: nwse-resize;
+}
+
+.img-handle[data-dir="ne"] {
+    top: -7px;
+    right: -7px;
+    cursor: nesw-resize;
+}
+
+.img-handle[data-dir="sw"] {
+    bottom: -7px;
+    left: -7px;
+    cursor: nesw-resize;
+}
+
+.img-handle[data-dir="se"] {
+    bottom: -7px;
+    right: -7px;
+    cursor: nwse-resize;
+}
+
+/* 大きさの表示と操作ボタン */
+
+.img-resizer-tools {
+    position: absolute;
+    top: -34px;
+    left: 0;
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 4px 6px;
+
+    background: #1f2937;
+    border-radius: 7px;
+
+    white-space: nowrap;
+    pointer-events: auto;
+
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+}
+
+.img-resizer-size {
+    color: #cbd5e1;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.img-resizer-tools button {
+    width: 24px;
+    height: 24px;
+
+    padding: 0;
+
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+
+    color: #e2e8f0;
+    font-size: 13px;
+    line-height: 1;
+}
+
+.img-resizer-tools button:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* =========================================================
+   行の高さを手で変える
+   ========================================================= */
+
+/*
+   行番号セルの下端に、つかむための帯を重ねる。
+   スプレッドシートで行の境目をドラッグするのと同じ操作。
+*/
+
+.sheet .c-num {
+    position: relative;
+}
+
+.row-grip {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+
+    height: 7px;
+
+    cursor: row-resize;
+
+    z-index: 31;   /* 固定列より前に出す */
+}
+
+.row-grip:hover {
+    background: #2563eb;
+    opacity: 0.5;
+}
+
+body.is-resizing-row {
+    user-select: none;
+    cursor: row-resize;
+}
+
+/*
+   高さを指定した行は、キャプチャ画像と入力欄をその高さに合わせる。
+
+   行の高さは中身のうち一番背の高いものが決めるため、
+   画像と入力欄を追従させないと「縮められない」状態になる。
+*/
+
+.sheet tbody tr[data-h] {
+    height: var(--row-h);
+}
+
+.sheet tbody tr[data-h] .c-shot img {
+    height: calc(var(--row-h) - 22px);
+    width: auto;
+    max-width: 100%;
+}
+
+.sheet tbody tr[data-h] textarea {
+    /* 入力欄は自動リサイズが inline style を書くことがあるので、
+       手で高さを決めた行ではこちらを優先させる。 */
+    height: calc(var(--row-h) - 26px) !important;
+    min-height: 0;
+}
+
+.sheet tbody tr[data-h] .material-editor {
+    max-height: calc(var(--row-h) - 26px);
+    overflow: auto;
+}
+
+
+/* =========================================================
+   新規案件：ファイル / リンクの切り替え
+   ========================================================= */
+
+.source-picker {
+    margin: 4px 0 2px;
+
+    border: 1px solid #dbe1e8;
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    background: #fbfcfe;
+}
+
+.source-tabs {
+    display: flex;
+
+    border-bottom: 1px solid #dbe1e8;
+
+    background: #f1f4f8;
+}
+
+.source-tab {
+    flex: 1 1 0;
+
+    padding: 10px 8px;
+
+    border: 0;
+    background: transparent;
+
+    font-size: 13px;
+    font-weight: 600;
+    color: #5b6675;
+
+    cursor: pointer;
+}
+
+.source-tab + .source-tab {
+    border-left: 1px solid #dbe1e8;
+}
+
+.source-tab:hover {
+    background: #e8edf4;
+}
+
+.source-tab.is-active {
+    background: #fff;
+    color: #1a6bd4;
+
+    box-shadow: inset 0 -2px 0 #1a6bd4;
+}
+
+.source-panel {
+    padding: 12px;
+}
+
+.source-panel.is-hidden {
+    display: none;
+}
+
+.source-panel > label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-size: 12px;
+    font-weight: 600;
+    color: #5b6675;
+}
+
+.source-panel input[type="url"] {
+    width: 100%;
+
+    padding: 8px 10px;
+
+    border: 1px solid #cfd6df;
+    border-radius: 6px;
+
+    font-size: 13px;
+}
+
+.source-panel .hint {
+    margin: 8px 0 0;
+
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   レビュー表：見出し行を常に画面に出したままにする
+   ========================================================= */
+
+/*
+   sticky な見出しは「一番近いスクロール枠」に貼り付く。
+   .table-wrap の max-height が外れていると枠自体が伸び切ってしまい、
+   代わりにページがスクロールするため、見出しが上へ流れて消えていた。
+   表の中だけが縦スクロールするように戻す。
+*/
+
+body.page-project .table-wrap {
+    max-height: calc(100vh - 210px);
+
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+/* 見出しは表の上端に貼り付ける */
+body.page-project .sheet thead th {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+}
+
+/*
+   左端の # 列だけは、縦にも横にも固定する。
+   行の高さをつかむ .row-grip は絶対配置なので、
+   position: relative でなく sticky でも基準として機能する。
+*/
+body.page-project .sheet .c-num {
+    position: sticky;
+    left: 0;
+}
+
+body.page-project .sheet thead th.c-num {
+    z-index: 45;
+}
+
+body.page-project .sheet thead th.c-shot {
+    z-index: 45;
+}
+
+
+/* =========================================================
+   案件データベース：クリックできる場所を分ける
+   ========================================================= */
+
+/*
+   以前は行のどこを押しても案件へ飛んでいた。
+   案件名リンクとジャンルだけを押せるようにして、
+   行そのものはただの表として扱う。
+*/
+
+.projects-table tbody tr,
+.projects-table tbody td {
+    cursor: default;
+}
+
+.project-name-cell .project-link {
+    cursor: pointer;
+}
+
+/* ジャンルのラベルはリンクとして押せる */
+.database-pill.is-link {
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.database-pill.is-link:hover {
+    filter: brightness(0.94);
+    text-decoration: underline;
+}
+
+/* 案件番号
+   以前は #64748b / #f1f5f9 でコントラスト比 4.34:1 しかなく、
+   小さい文字の基準（4.5:1）を下回って読みにくかった。
+   文字を濃く・背景を少し締めて 8.8:1 にしている。 */
+.project-no {
+    display: inline-block;
+
+    margin-left: 8px;
+    padding: 2px 8px;
+
+    background: #e8edf3;
+    border: 1px solid #c3ccd8;
+    border-radius: 5px;
+
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* 案件番号だけの列では余白を付けない */
+.projects-table td > .project-no:only-child {
+    margin-left: 0;
+}
+
+
+/* 案件情報のジャンルはジャンル別ページへのリンク */
+.project-info-meta .genre-link {
+    font-weight: 700;
+    color: #1a6bd4;
+    border-bottom: 1px dotted currentColor;
+}
+
+.project-info-meta .genre-link:hover {
+    color: #0f4fa8;
+    border-bottom-style: solid;
+}
+
+
+/* =========================================================
+   列の幅を手で変える
+   ========================================================= */
+
+/*
+   見出しの右端に、つかむための細い帯を重ねる。
+   JS（initColumnResize）は最初から用意されていたが、
+   この見た目の指定が無く幅0の span だったため掴めなかった。
+   行の高さを変える .row-grip と同じ作りにする。
+*/
+
+.col-grip {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -3px;
+
+    width: 7px;
+
+    cursor: col-resize;
+
+    /* 見出しの文字より前、固定列よりさらに前に出す */
+    z-index: 50;
+
+    /* 掴んだときに文字が選択されないように */
+    user-select: none;
+}
+
+.col-grip:hover {
+    background: #2563eb;
+    opacity: 0.5;
+}
+
+/* ドラッグ中は全体のカーソルを合わせる */
+body.is-resizing-col {
+    cursor: col-resize;
+    user-select: none;
+}
+
+body.is-resizing-col .col-grip {
+    background: #2563eb;
+    opacity: 0.6;
+}
+
+/* 見出しは sticky なので、つまみの基準として機能する。
+   念のため静的配置になっている場合にも備える。 */
+.sheet thead th {
+    position: sticky;
+}
+
+
+/* =========================================================
+   パーマリンクのボタン
+   ========================================================= */
+
+.permalink-button {
+    margin-left: 14px;
+    padding: 6px 12px;
+
+    background: #eef4ff;
+    border: 1px solid #c7dbff;
+    border-radius: 8px;
+
+    color: #1a4fa0;
+    font-size: 13px;
+    font-weight: 700;
+
+    max-width: 380px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.permalink-button:hover {
+    background: #dfeaff;
+    border-color: #9dbef5;
+}
+
+
+/* =========================================================
+   行の選択と削除
+   ========================================================= */
+
+.row-delete-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    margin-bottom: 10px;
+    padding: 10px 14px;
+
+    background: #fff5f5;
+    border: 1px solid #f6c6c6;
+    border-radius: 10px;
+}
+
+.row-delete-count {
+    font-size: 13px;
+    font-weight: 700;
+    color: #9b1c1c;
+}
+
+.row-delete-clear {
+    background: #ffffff;
+    border: 1px solid #d9d9d9;
+    color: #444444;
+    font-size: 12px;
+}
+
+.row-delete-hint {
+    margin-left: auto;
+    font-size: 12px;
+}
+
+/* 行番号セルの中：チェックボックスと番号を縦に並べる */
+.sheet .c-num .row-select {
+    display: block;
+    margin: 0 auto 2px;
+    cursor: pointer;
+}
+
+.sheet .c-num .row-seq {
+    display: block;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 選んだ行は色を付けて分かるようにする */
+.sheet tbody tr.is-selected > td {
+    background: #fff1f1 !important;
+}
+
+
+/* =========================================================
+   動画がまだ無い案件
+   ========================================================= */
+
+.panel.no-video {
+    border-color: #cfd9e6;
+    background: #f8fbff;
+}
+
+.no-video-form {
+    max-width: 560px;
+    margin-top: 14px;
+}
+
+.no-video-actions {
+    margin-top: 14px;
+}
+
+
+/* =========================================================
+   行の選択・削除バー（控えめな見た目に）
+   ========================================================= */
+
+.row-delete-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    margin: 0 0 8px;
+    padding: 4px 10px;
+
+    background: #fdf6f6;
+    border: 1px solid #eccccc;
+    border-radius: 999px;
+
+    font-size: 12px;
+}
+
+.row-delete-count {
+    color: #8a4b4b;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.row-delete-bar button {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.row-delete-run {
+    background: #e05b5b;
+    color: #ffffff;
+}
+
+.row-delete-run:hover {
+    background: #c94848;
+}
+
+.row-delete-clear {
+    background: transparent;
+    border: 1px solid #d8d8d8;
+    color: #666666;
+}
+
+.row-delete-clear:hover {
+    background: #f2f2f2;
+}
+
+
+/* 元に戻す */
+.row-undo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0 0 8px;
+    padding: 5px 12px;
+
+    background: #f2f7ff;
+    border: 1px solid #c9dcf7;
+    border-radius: 999px;
+
+    font-size: 12px;
+    color: #2a4a75;
+}
+
+.row-undo-button {
+    padding: 3px 12px;
+
+    background: #2563eb;
+    color: #ffffff;
+
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.row-undo-button:hover {
+    background: #1d4ed8;
+}
+
+.row-undo-button:disabled {
+    background: #9db8e8;
+    cursor: default;
+}
+
+
+/* =========================================================
+   空のスクリーンショット欄 / 行の追加 / 動画なしの案内
+   ========================================================= */
+
+/* 画像がまだ無い行。高さだけ確保して枠を保つ */
+.shot-empty {
+    display: block;
+    width: 124px;
+    height: 220px;
+
+    background:
+        repeating-linear-gradient(
+            45deg,
+            #fafbfc,
+            #fafbfc 8px,
+            #f2f4f7 8px,
+            #f2f4f7 16px
+        );
+
+    border: 1px dashed #dfe3e8;
+    border-radius: 4px;
+}
+
+/* 一番下の ＋ */
+.row-add-wrap {
+    position: sticky;
+    left: 0;
+
+    padding: 8px 10px;
+}
+
+.row-add {
+    width: 100%;
+    max-width: 260px;
+
+    padding: 7px 0;
+
+    background: #f6f8fb;
+    border: 1px dashed #c8d2de;
+    border-radius: 8px;
+
+    color: #5b6675;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.row-add:hover {
+    background: #eaf1fb;
+    border-color: #9dbef5;
+    color: #1a4fa0;
+}
+
+.row-add:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* 動画なしの案内（折りたたみ・控えめ） */
+details.no-video {
+    margin-bottom: 12px;
+    padding: 8px 14px;
+
+    background: #f7faff;
+    border: 1px solid #d7e3f5;
+    border-radius: 10px;
+
+    font-size: 13px;
+}
+
+details.no-video > summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: #24507f;
+    list-style: none;
+}
+
+details.no-video > summary::-webkit-details-marker {
+    display: none;
+}
+
+details.no-video > summary::before {
+    content: "▸ ";
+}
+
+details.no-video[open] > summary::before {
+    content: "▾ ";
+}
+
+.no-video-badge {
+    display: inline-block;
+
+    margin-right: 6px;
+    padding: 1px 8px;
+
+    background: #e2ecfa;
+    border-radius: 999px;
+
+    color: #24507f;
+    font-size: 11px;
+}
+
+.no-video-note {
+    margin: 8px 0 0;
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   ユーザー管理
+   ========================================================= */
+
+.auth-notice {
+    margin: 0 0 14px;
+    padding: 9px 12px;
+
+    background: #eefaf1;
+    border: 1px solid #bfe6cb;
+    border-radius: 8px;
+
+    color: #17603a;
+    font-size: 13px;
+}
+
+.users-table td {
+    vertical-align: middle;
+}
+
+.users-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.users-actions details > summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: #2563eb;
+}
+
+.users-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    margin: 4px 0 0;
+}
+
+.users-inline input[type="password"] {
+    padding: 5px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.users-actions button {
+    padding: 4px 10px;
+    font-size: 12px;
+
+    background: #f1f5f9;
+    border: 1px solid #dde5ee;
+    color: #475569;
+}
+
+.users-actions button:hover {
+    background: #e5ebf3;
+}
+
+.users-actions button.primary {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+.users-actions button.danger {
+    background: #fdecec;
+    border-color: #f3c9c9;
+    color: #9b1c1c;
+}
+
+
+/* =========================================================
+   ブランド（ヘッダー左）
+   ========================================================= */
+
+.topbar {
+    gap: 18px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    flex: 0 0 auto;
+}
+
+.brand-mark {
+    display: block;
+    width: 30px;
+    height: 30px;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.brand-name {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #0f172a;
+}
+
+.brand-sub {
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: #9aa4b2;
+}
+
+/* 案件ページ・ユーザー管理の見出しはブランドの右に並ぶ */
+.project-topbar,
+.topbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    min-width: 0;
+
+    margin-left: 4px;
+    padding-left: 18px;
+
+    border-left: 1px solid #e5e7eb;
+}
+
+.back-link,
+.topbar-inner .back {
+    flex: 0 0 auto;
+
+    padding: 6px 10px;
+    border-radius: 8px;
+
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.back-link:hover,
+.topbar-inner .back:hover {
+    background: #f1f4f8;
+    color: #111827;
+}
+
+.project-topbar .project-name,
+.topbar-inner .project-name {
+    min-width: 0;
+
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   ヘッダー右のアカウント表示
+   ========================================================= */
+
+.account {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    /* ここが auto なので、間に何が入っても右端に寄る */
+    margin-left: auto;
+    flex: 0 0 auto;
+}
+
+.account-avatar {
+    display: grid;
+    place-items: center;
+
+    width: 28px;
+    height: 28px;
+
+    border-radius: 50%;
+
+    background: linear-gradient(135deg, #3b82f6, #22d3ee);
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.account-name {
+    max-width: 220px;
+
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.account-links {
+    display: flex;
+    gap: 4px;
+
+    margin-left: 2px;
+    padding-left: 10px;
+
+    border-left: 1px solid #e5e7eb;
+}
+
+.account-links a {
+    padding: 6px 10px;
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.account-links a:hover {
+    background: #f1f4f8;
+    color: #111827;
+}
+
+@media (max-width: 800px) {
+
+    .brand-sub {
+        display: none;
+    }
+
+    .account-name,
+    .account-links {
+        display: none;
+    }
+}
+
+
+/* =========================================================
+   ログイン・初期設定・2段階認証
+   ========================================================= */
+
+body.page-auth {
+    display: grid;
+    place-items: center;
+
+    min-height: 100vh;
+    padding: 40px 20px;
+
+    /* ロゴの青にすこしだけ寄せた背景 */
+    background:
+        radial-gradient(820px 460px at 50% -12%,
+            rgba(59, 130, 246, 0.16), transparent 62%),
+        radial-gradient(620px 420px at 88% 112%,
+            rgba(34, 211, 238, 0.14), transparent 60%),
+        #f5f7fb;
+}
+
+.auth-wrap {
+    width: 100%;
+    max-width: 408px;
+}
+
+.auth-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    margin-bottom: 26px;
+}
+
+.auth-brand-mark {
+    display: block;
+    width: 60px;
+    height: 60px;
+
+    filter: drop-shadow(0 8px 20px rgba(37, 99, 235, 0.28));
+}
+
+.auth-brand-name {
+    margin-top: 12px;
+
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: #0f172a;
+}
+
+.auth-brand-sub {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-top: 7px;
+
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.34em;
+    color: #93a0b4;
+}
+
+.auth-brand-sub::before,
+.auth-brand-sub::after {
+    content: "";
+
+    width: 26px;
+    height: 1px;
+
+    background: #cbd5e1;
+}
+
+.auth-card {
+    padding: 34px 34px 30px;
+
+    background: #ffffff;
+    border: 1px solid #e6eaf0;
+    border-radius: 18px;
+
+    box-shadow:
+        0 20px 50px rgba(15, 23, 42, 0.10),
+        0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.auth-title {
+    margin: 0 0 8px;
+
+    font-size: 19px;
+    font-weight: 700;
+    text-align: center;
+    color: #111827;
+}
+
+.auth-note {
+    margin: 0 0 22px;
+
+    font-size: 13px;
+    line-height: 1.75;
+    text-align: center;
+    color: #6b7280;
+}
+
+.auth-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+
+    margin: 0 0 18px;
+    padding: 11px 13px;
+
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+
+    font-size: 13px;
+    line-height: 1.6;
+    color: #b91c1c;
+}
+
+.auth-error span {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+
+    width: 17px;
+    height: 17px;
+    margin-top: 1px;
+
+    border-radius: 50%;
+    background: #dc2626;
+    color: #ffffff;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.auth-form label {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.auth-form label > span {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    margin-bottom: 7px;
+
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #4b5563;
+}
+
+.auth-form label > span em {
+    font-style: normal;
+    font-size: 11px;
+    font-weight: 600;
+    color: #9aa4b2;
+}
+
+.auth-form input[type="text"],
+.auth-form input[type="password"] {
+    width: 100%;
+
+    padding: 12px 14px;
+
+    background: #fbfcfe;
+    border: 1px solid #dfe4ec;
+    border-radius: 10px;
+
+    font-size: 15px;
+    color: #111827;
+
+    transition:
+        border-color 0.15s,
+        box-shadow 0.15s,
+        background 0.15s;
+}
+
+.auth-form input::placeholder {
+    color: #b6bfcc;
+}
+
+.auth-form input:focus {
+    outline: none;
+
+    background: #ffffff;
+    border-color: #2f6df6;
+
+    box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.15);
+}
+
+.auth-form input.auth-code {
+    width: 100%;
+
+    margin-bottom: 6px;
+    padding: 15px 0;
+
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    text-indent: 0.4em;
+    font-variant-numeric: tabular-nums;
+}
+
+.auth-form input.auth-code::placeholder {
+    letter-spacing: 0.4em;
+    color: #dbe1ea;
+}
+
+button.auth-submit,
+.auth-submit {
+    width: 100%;
+
+    margin-top: 6px;
+    padding: 13px;
+
+    border-radius: 10px;
+
+    font-size: 15px;
+    font-weight: 700;
+
+    background: linear-gradient(135deg, #2f6df6, #1fa2ef);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.26);
+
+    transition: filter 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+
+button.auth-submit:hover,
+.auth-submit:hover {
+    background: linear-gradient(135deg, #2560e0, #1791d8);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.32);
+}
+
+.auth-submit:active {
+    transform: translateY(1px);
+}
+
+.auth-sub {
+    margin: 18px 0 0;
+
+    font-size: 12.5px;
+    text-align: center;
+}
+
+.auth-sub a {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.auth-sub a:hover {
+    text-decoration: underline;
+}
+
+.auth-qr {
+    display: block;
+
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 18px;
+    padding: 10px;
+
+    background: #ffffff;
+    border: 1px solid #e6eaf0;
+    border-radius: 14px;
+}
+
+.auth-manual {
+    margin-bottom: 20px;
+
+    font-size: 12.5px;
+}
+
+.auth-manual summary {
+    cursor: pointer;
+
+    text-align: center;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.auth-manual summary:hover {
+    color: #2563eb;
+}
+
+.auth-manual .auth-note {
+    margin: 12px 0 8px;
+}
+
+.auth-secret {
+    display: block;
+
+    padding: 11px;
+
+    background: #f6f8fb;
+    border: 1px solid #e6eaf0;
+    border-radius: 9px;
+
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.08em;
+    text-align: center;
+    word-break: break-all;
+    color: #374151;
+}
+
+.auth-foot {
+    margin: 18px 0 0;
+
+    font-size: 11.5px;
+    text-align: center;
+    color: #9aa4b2;
+}
+
+
+/* =========================================================
+   案件を追加するフォーム
+   ========================================================= */
+
+.new-project-header {
+    margin-bottom: 22px;
+}
+
+.new-project-card h2 {
+    margin-bottom: 6px;
+
+    font-size: 17px;
+    letter-spacing: 0.01em;
+}
+
+.new-project-lead {
+    margin: 0;
+
+    font-size: 13px;
+    line-height: 1.75;
+    color: #6b7280;
+}
+
+.field-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+
+    margin-bottom: 24px;
+}
+
+.field-wide {
+    grid-column: 1 / -1;
+}
+
+.page .field-grid .field {
+    margin-bottom: 0;
+}
+
+.page .field label {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    margin-bottom: 7px;
+
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.field-req,
+.field-opt {
+    padding: 1px 6px;
+
+    border-radius: 5px;
+
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.field-req {
+    background: #eaf1ff;
+    color: #2f6df6;
+}
+
+.field-opt {
+    background: #f1f3f6;
+    color: #9aa4b2;
+}
+
+.page .field input[type="text"],
+.page .field input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+
+    background: #fbfcfe;
+    border: 1px solid #dfe4ec;
+    border-radius: 9px;
+
+    font-size: 14px;
+
+    transition:
+        border-color 0.15s,
+        box-shadow 0.15s,
+        background 0.15s;
+}
+
+.page .field input[type="text"]::placeholder,
+.page .field input[type="password"]::placeholder {
+    color: #b6bfcc;
+}
+
+.page .field input[type="text"]:focus,
+.page .field input[type="password"]:focus {
+    outline: none;
+
+    background: #ffffff;
+    border-color: #2f6df6;
+
+    box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.13);
+}
+
+.field-hint {
+    margin: 6px 0 0;
+
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: #9aa4b2;
+}
+
+.field-section {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    margin-bottom: 9px;
+}
+
+.field-section-label {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.field-section-note {
+    font-size: 11.5px;
+    color: #9aa4b2;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+
+    margin-top: 22px;
+    padding-top: 20px;
+
+    border-top: 1px solid #eef1f5;
+}
+
+button.submit-project,
+.submit-project {
+    flex: 0 0 auto;
+
+    padding: 11px 22px;
+
+    border-radius: 9px;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    background: linear-gradient(135deg, #2f6df6, #1fa2ef);
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.22);
+
+    transition: filter 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+
+button.submit-project:hover,
+.submit-project:hover {
+    background: linear-gradient(135deg, #2560e0, #1791d8);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+
+.submit-project:active {
+    transform: translateY(1px);
+}
+
+.form-actions-note {
+    flex: 1 1 260px;
+
+    margin: 0;
+
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: #9aa4b2;
+}
+
+@media (max-width: 700px) {
+
+    .field-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* =========================================================
+   ヘッダーのナビ
+   ========================================================= */
+
+.mainnav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    margin-left: 4px;
+    padding-left: 18px;
+
+    border-left: 1px solid #e5e7eb;
+}
+
+.mainnav a {
+    padding: 7px 12px;
+    border-radius: 8px;
+
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+
+    white-space: nowrap;
+}
+
+.mainnav a:hover {
+    background: #f1f4f8;
+    color: #111827;
+}
+
+.mainnav a.is-active {
+    background: #eaf1ff;
+    color: #2f6df6;
+}
+
+@media (max-width: 900px) {
+
+    .mainnav {
+        margin-left: 0;
+        padding-left: 10px;
+        overflow-x: auto;
+    }
+
+    .mainnav a {
+        padding: 7px 9px;
+        font-size: 12px;
+    }
+}
+
+
+/* =========================================================
+   数字を並べるカード
+   ========================================================= */
+
+.page-wide {
+    width: min(1500px, calc(100% - 60px));
+}
+
+.stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+}
+
+.stat {
+    padding: 15px 16px;
+
+    background: #fbfcfe;
+    border: 1px solid #eef1f5;
+    border-radius: 12px;
+}
+
+.stat-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #9aa4b2;
+}
+
+.stat-value {
+    margin-top: 6px;
+
+    font-size: 22px;
+    font-weight: 800;
+    color: #111827;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-note {
+    margin-top: 5px;
+
+    font-size: 11px;
+    line-height: 1.5;
+    color: #9aa4b2;
+}
+
+.stat-analysis {
+    color: #2f6df6;
+}
+
+.stat-reuse {
+    color: #0f9f8f;
+}
+
+
+/* =========================================================
+   進捗ボード
+   ========================================================= */
+
+.board-summary-head {
+    margin-bottom: 18px;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(240px, 1fr));
+    gap: 14px;
+
+    align-items: start;
+}
+
+.board-col {
+    display: flex;
+    flex-direction: column;
+
+    background: #f2f4f7;
+    border: 1px solid #e6eaf0;
+    border-radius: 14px;
+}
+
+.board-col-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 12px 14px 10px;
+}
+
+.board-col-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4b5563;
+}
+
+.board-col-count {
+    display: grid;
+    place-items: center;
+
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+
+    background: #e2e6ec;
+    border-radius: 6px;
+
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.board-drop {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    min-height: 90px;
+    padding: 0 10px 12px;
+}
+
+.board-drop.is-over {
+    background: rgba(47, 109, 246, 0.06);
+    border-radius: 0 0 14px 14px;
+}
+
+.board-card {
+    padding: 11px 12px;
+
+    background: #ffffff;
+    border: 1px solid #e6eaf0;
+    border-radius: 10px;
+
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+
+    cursor: grab;
+}
+
+.board-card:hover {
+    border-color: #cdd8ea;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.board-card.is-dragging {
+    opacity: 0.45;
+    cursor: grabbing;
+}
+
+.board-card-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+
+    margin-bottom: 7px;
+}
+
+.board-card-top:empty {
+    display: none;
+}
+
+.board-card-name {
+    display: block;
+
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: #111827;
+}
+
+.board-card-name:hover {
+    color: #2f6df6;
+    text-decoration: underline;
+}
+
+.board-card-no {
+    margin-left: 4px;
+
+    font-size: 11px;
+    font-weight: 700;
+    color: #8b95a5;
+}
+
+.board-card-times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin-top: 9px;
+}
+
+.board-time {
+    padding: 2px 7px;
+    border-radius: 6px;
+
+    font-size: 10.5px;
+    font-weight: 700;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.board-time-analysis {
+    background: #eaf1ff;
+    color: #2f6df6;
+}
+
+.board-time-reuse {
+    background: #e6f6f3;
+    color: #0f9f8f;
+}
+
+.board-empty {
+    margin: 0;
+    padding: 12px 0;
+
+    font-size: 11.5px;
+    text-align: center;
+    color: #b6bfcc;
+}
+
+.board-drop .board-card ~ .board-empty {
+    display: none;
+}
+
+@media (max-width: 1100px) {
+
+    .board {
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+
+    .board {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* =========================================================
+   作業時間
+   ========================================================= */
+
+.daybars {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.daybar {
+    display: grid;
+    grid-template-columns: 48px 1fr 90px;
+    align-items: center;
+    gap: 12px;
+}
+
+.daybar-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #9aa4b2;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.daybar-track {
+    display: flex;
+
+    height: 18px;
+
+    background: #f2f4f7;
+    border-radius: 5px;
+
+    overflow: hidden;
+}
+
+.daybar-fill {
+    display: block;
+    height: 100%;
+}
+
+.daybar-analysis {
+    background: #2f6df6;
+}
+
+.daybar-reuse {
+    background: #0f9f8f;
+}
+
+.daybar-other {
+    background: #cbd5e1;
+}
+
+.daybar-total {
+    font-size: 11.5px;
+    text-align: right;
+    color: #6b7280;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    margin: 16px 0 0;
+
+    font-size: 11.5px;
+    color: #9aa4b2;
+}
+
+.legend-key {
+    display: inline-block;
+
+    width: 10px;
+    height: 10px;
+    margin-left: 12px;
+
+    border-radius: 3px;
+}
+
+.legend-key:first-child {
+    margin-left: 0;
+}
+
+.legend-analysis {
+    background: #2f6df6;
+}
+
+.legend-reuse {
+    background: #0f9f8f;
+}
+
+.legend-other {
+    background: #cbd5e1;
+}
+
+.report-num {
+    text-align: right;
+    white-space: nowrap;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.report-ratio {
+    width: 170px;
+}
+
+.ratio {
+    display: flex;
+
+    height: 8px;
+
+    background: #eef1f5;
+    border-radius: 4px;
+
+    overflow: hidden;
+}
+
+.ratio-analysis {
+    background: #2f6df6;
+}
+
+.ratio-reuse {
+    background: #0f9f8f;
+}
+
+
+/* =========================================================
+   共通ノート
+   ========================================================= */
+
+.notes-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    margin: 20px 0 14px;
+    padding: 15px 16px;
+
+    background: #fbfcfe;
+    border: 1px solid #eef1f5;
+    border-radius: 12px;
+}
+
+.notes-filter-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.notes-filter-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+}
+
+.notes-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    font-size: 12.5px;
+    color: #374151;
+
+    cursor: pointer;
+}
+
+.notes-filter select {
+    min-width: 0;
+    padding: 7px 10px;
+
+    font-size: 12.5px;
+}
+
+button.notes-apply,
+.notes-apply {
+    padding: 8px 14px;
+    border-radius: 8px;
+
+    font-size: 12.5px;
+}
+
+.notes-meta {
+    margin: 0;
+
+    font-size: 12.5px;
+    color: #6b7280;
+}
+
+.notes-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.note-item {
+    padding: 14px 0;
+    border-top: 1px solid #eef1f5;
+}
+
+.note-item:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.note-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.note-count {
+    flex: 0 0 auto;
+
+    padding: 2px 8px;
+    margin-top: 1px;
+
+    background: #eaf1ff;
+    border-radius: 6px;
+
+    font-size: 11px;
+    font-weight: 700;
+    color: #2f6df6;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.note-text {
+    margin: 0;
+
+    font-size: 14px;
+    line-height: 1.7;
+    color: #111827;
+
+    white-space: pre-wrap;
+}
+
+.note-foot {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin: 8px 0 0 44px;
+}
+
+.note-field {
+    padding: 1px 7px;
+
+    background: #f1f3f6;
+    border-radius: 5px;
+
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #8b95a5;
+}
+
+.note-projects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.note-projects a {
+    padding: 1px 7px;
+
+    border: 1px solid #e6eaf0;
+    border-radius: 5px;
+
+    font-size: 10.5px;
+    color: #6b7280;
+}
+
+.note-projects a:hover {
+    border-color: #2f6df6;
+    color: #2f6df6;
+}
+
+
+/* =========================================================
+   この場面を追加（動画の横のボタン）
+   ========================================================= */
+
+.player-stage {
+    position: relative;
+    display: flex;
+}
+
+.player-stage > video {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.capture-shot {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    z-index: 3;
+
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 8px 12px;
+
+    border: 0;
+    border-radius: 9px;
+
+    background: rgba(17, 24, 39, 0.72);
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    backdrop-filter: blur(4px);
+
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.35);
+
+    transition: background 0.15s, transform 0.05s, opacity 0.15s;
+}
+
+.capture-shot:hover {
+    background: rgba(47, 109, 246, 0.92);
+}
+
+.capture-shot:active {
+    transform: translateY(1px);
+}
+
+.capture-shot:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.capture-icon {
+    display: block;
+
+    width: 13px;
+    height: 11px;
+
+    border: 2px solid currentColor;
+    border-radius: 3px;
+
+    position: relative;
+}
+
+.capture-icon::before {
+    content: "";
+
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    width: 5px;
+    height: 5px;
+
+    margin: -2.5px 0 0 -2.5px;
+
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.capture-shot.is-busy .capture-label::after {
+    content: "…";
+}
+
+@media (max-width: 700px) {
+
+    .capture-label {
+        display: none;
+    }
+
+    .capture-shot {
+        padding: 8px;
+    }
+}
+
+
+/* =========================================================
+   自分で足した行（つかんで動かせる）
+   ========================================================= */
+
+/* 自動で並んだ行と見分けがつくように、左に細い印を出す。
+   tr に影を付けても表では描かれないことがあるので、先頭のセルに付ける。 */
+.sheet tbody tr[data-manual] > td:first-child {
+    box-shadow: inset 3px 0 0 rgba(47, 109, 246, 0.6);
+}
+
+.sheet tbody tr.is-added > td {
+    animation: rowAdded 1.6s ease-out;
+}
+
+@keyframes rowAdded {
+    from {
+        background: #e4efff;
+    }
+    to {
+        background: transparent;
+    }
+}
+
+
+/* =========================================================
+   月間目標
+   ========================================================= */
+
+.goal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+
+    margin-bottom: 18px;
+}
+
+.goal-edit summary {
+    cursor: pointer;
+
+    padding: 7px 12px;
+
+    background: #f1f4f8;
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+
+    white-space: nowrap;
+}
+
+.goal-edit summary:hover {
+    background: #e6ebf2;
+    color: #111827;
+}
+
+.goal-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    margin-top: 12px;
+    padding: 14px;
+
+    background: #fbfcfe;
+    border: 1px solid #eef1f5;
+    border-radius: 10px;
+}
+
+.goal-form label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.goal-form label span {
+    font-weight: 700;
+    color: #374151;
+}
+
+.goal-form input {
+    width: 78px;
+    padding: 7px 9px;
+
+    background: #ffffff;
+    border: 1px solid #dfe4ec;
+    border-radius: 8px;
+
+    font-size: 13px;
+    text-align: right;
+}
+
+.goal-bar-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
+
+    margin-bottom: 20px;
+}
+
+.goal-figure {
+    font-size: 15px;
+    color: #6b7280;
+
+    white-space: nowrap;
+}
+
+.goal-figure b {
+    font-size: 26px;
+    color: #111827;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.goal-rate {
+    margin-left: 8px;
+
+    padding: 2px 8px;
+
+    background: #eaf1ff;
+    border-radius: 6px;
+
+    font-size: 12px;
+    font-weight: 700;
+    color: #2f6df6;
+}
+
+.goal-bar {
+    height: 14px;
+
+    background: #eef1f5;
+    border-radius: 7px;
+
+    overflow: hidden;
+}
+
+.goal-fill {
+    display: block;
+    height: 100%;
+
+    background: linear-gradient(90deg, #2f6df6, #22d3ee);
+    border-radius: 7px;
+
+    transition: width 0.4s ease;
+}
+
+.goal-left {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #6b7280;
+
+    white-space: nowrap;
+}
+
+.board-title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+
+    margin: 4px 0 14px;
+}
+
+.board-title h2 {
+    margin: 0;
+    font-size: 17px;
+}
+
+.board-title .muted {
+    font-size: 12.5px;
+}
+
+@media (max-width: 700px) {
+
+    .goal-bar-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}
+
+
+/* =========================================================
+   目標との比較
+   ========================================================= */
+
+.goals {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.goal-line {
+    display: grid;
+    grid-template-columns: 64px 1fr 190px 120px;
+    align-items: center;
+    gap: 14px;
+}
+
+.goal-line-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.goal-line-bar {
+    position: relative;
+
+    height: 12px;
+
+    background: #eef1f5;
+    border-radius: 6px;
+
+    overflow: hidden;
+}
+
+.goal-line-fill {
+    display: block;
+    height: 100%;
+
+    background: #0f9f8f;
+    border-radius: 6px;
+}
+
+.goal-line.is-over .goal-line-fill {
+    background: #e0803a;
+}
+
+.goal-line-num {
+    font-size: 13px;
+    font-weight: 700;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.goal-line-num .muted {
+    font-weight: 400;
+    font-size: 11.5px;
+}
+
+.goal-line-diff {
+    font-size: 12px;
+    text-align: right;
+    color: #0f9f8f;
+}
+
+.goal-line.is-over .goal-line-diff {
+    color: #c2610f;
+}
+
+@media (max-width: 800px) {
+
+    .goal-line {
+        grid-template-columns: 56px 1fr;
+    }
+
+    .goal-line-num,
+    .goal-line-diff {
+        grid-column: 2;
+        text-align: left;
+    }
+}
+
+
+/* =========================================================
+   ボトルネック
+   ========================================================= */
+
+.bottleneck {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+
+    padding: 16px 18px;
+
+    background: #fff8ef;
+    border: 1px solid #f3ddc0;
+    border-radius: 12px;
+}
+
+.bottleneck-mark {
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.bottleneck-text {
+    margin: 0;
+
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: #7a4a10;
+}
+
+.bottleneck-sub {
+    margin: 6px 0 0;
+
+    font-size: 12.5px;
+    color: #a0763c;
+}
+
+.note-hint {
+    margin: 14px 0 0;
+
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: #9aa4b2;
+}
+
+
+/* =========================================================
+   メンバー別
+   ========================================================= */
+
+.member {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-weight: 600;
+}
+
+.member-avatar {
+    display: grid;
+    place-items: center;
+
+    width: 24px;
+    height: 24px;
+
+    border-radius: 50%;
+
+    background: linear-gradient(135deg, #3b82f6, #22d3ee);
+    color: #ffffff;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.report-total td {
+    background: #fbfcfe;
+    font-weight: 700;
+}
+
+.member-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+
+    margin-top: 22px;
+}
+
+.member-chart {
+    padding: 16px;
+
+    background: #fbfcfe;
+    border: 1px solid #eef1f5;
+    border-radius: 12px;
+}
+
+.member-chart-title {
+    margin-bottom: 14px;
+
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+}
+
+.member-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+
+    height: 130px;
+}
+
+.member-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 1 0;
+
+    height: 100%;
+}
+
+.member-bar-track {
+    display: flex;
+    align-items: flex-end;
+
+    width: 100%;
+    max-width: 46px;
+    flex: 1 1 auto;
+}
+
+.member-bar-fill {
+    display: block;
+
+    width: 100%;
+    min-height: 3px;
+
+    border-radius: 5px 5px 0 0;
+}
+
+.member-bar-fill.is-analysis {
+    background: #2f6df6;
+}
+
+.member-bar-fill.is-reuse {
+    background: #0f9f8f;
+}
+
+.member-bar-name {
+    margin-top: 7px;
+
+    font-size: 11px;
+    color: #6b7280;
+
+    white-space: nowrap;
+}
+
+.ratio-num {
+    margin-left: 8px;
+
+    font-size: 11.5px;
+    color: #6b7280;
+
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 800px) {
+
+    .member-charts {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* =========================================================
+   ガイドライン
+   ========================================================= */
+
+.guideline-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+
+    margin-bottom: 16px;
+}
+
+button.ai-draft,
+.ai-draft {
+    flex: 0 0 auto;
+
+    padding: 9px 14px;
+
+    background: #111827;
+    color: #ffffff;
+
+    border-radius: 9px;
+
+    font-size: 12.5px;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+.ai-draft:hover {
+    background: #2f6df6;
+}
+
+.ai-draft:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.guideline-list {
+    margin: 0;
+    padding: 0 0 0 4px;
+
+    list-style: none;
+
+    counter-reset: guideline;
+}
+
+.guideline-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 11px 0;
+
+    border-top: 1px solid #eef1f5;
+
+    counter-increment: guideline;
+}
+
+.guideline-item:first-child {
+    border-top: 0;
+}
+
+.guideline-item::before {
+    content: counter(guideline);
+
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+
+    width: 20px;
+    height: 20px;
+
+    background: #eaf1ff;
+    border-radius: 6px;
+
+    font-size: 11px;
+    font-weight: 700;
+    color: #2f6df6;
+}
+
+.guideline-text {
+    flex: 1 1 auto;
+
+    font-size: 14px;
+    line-height: 1.7;
+    color: #111827;
+}
+
+.guideline-seen {
+    flex: 0 0 auto;
+
+    font-size: 11px;
+    color: #9aa4b2;
+}
+
+.guideline-drop {
+    flex: 0 0 auto;
+
+    width: 24px;
+    height: 24px;
+    padding: 0;
+
+    background: transparent;
+    color: #b6bfcc;
+
+    border-radius: 6px;
+
+    font-size: 15px;
+    line-height: 1;
+}
+
+.guideline-drop:hover {
+    background: #fdecec;
+    color: #b91c1c;
+}
+
+.guideline-empty {
+    margin: 0;
+
+    padding: 16px;
+
+    background: #fbfcfe;
+    border: 1px dashed #dfe4ec;
+    border-radius: 10px;
+
+    font-size: 12.5px;
+    text-align: center;
+    color: #9aa4b2;
+}
+
+.note-adopt {
+    flex: 0 0 auto;
+
+    padding: 4px 11px;
+
+    background: #eaf1ff;
+    color: #2f6df6;
+
+    border-radius: 7px;
+
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.note-adopt:hover {
+    background: #2f6df6;
+    color: #ffffff;
+}
+
+.note-adopted {
+    flex: 0 0 auto;
+
+    padding: 4px 9px;
+
+    background: #e6f6f3;
+    border-radius: 7px;
+
+    font-size: 11px;
+    font-weight: 700;
+    color: #0f9f8f;
+}
+
+.ai-result {
+    margin-top: 18px;
+    padding: 16px;
+
+    background: #fbfcfe;
+    border: 1px solid #eef1f5;
+    border-radius: 12px;
+}
+
+.ai-result-title {
+    margin-bottom: 12px;
+
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+}
+
+.ai-draft-row {
+    display: flex;
+    gap: 8px;
+
+    margin-bottom: 8px;
+}
+
+.ai-draft-row input {
+    flex: 1 1 auto;
+
+    padding: 8px 11px;
+
+    background: #ffffff;
+    border: 1px solid #dfe4ec;
+    border-radius: 8px;
+
+    font-size: 13px;
+}
+
+.ai-draft-row button {
+    flex: 0 0 auto;
+
+    padding: 8px 14px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   案件ページの見出し
+   ========================================================= */
+
+.project-info-head {
+    display: block;
+}
+
+.project-info-main {
+    min-width: 0;
+}
+
+.project-info-title {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    flex-wrap: wrap;
+
+    margin-bottom: 9px;
+
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1.35;
+    color: #0f172a;
+}
+
+.project-info-no {
+    padding: 2px 8px;
+
+    background: #eaf1ff;
+    border-radius: 6px;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #2f6df6;
+}
+
+.project-info-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+
+    font-size: 12.5px;
+    color: #374151;
+}
+
+.meta-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #9aa4b2;
+}
+
+.meta-time {
+    font-variant-numeric: tabular-nums;
+    color: #6b7280;
+}
+
+.meta-none {
+    color: #b6bfcc;
+}
+
+.project-info-meta .genre-link {
+    padding: 1px 7px;
+
+    background: #f1f4f8;
+    border-radius: 6px;
+
+    font-weight: 700;
+    color: #374151;
+}
+
+.project-info-meta .genre-link:hover {
+    background: #eaf1ff;
+    color: #2f6df6;
+}
+
+/* 案件名のすぐ右に置く。画面の端まで動かさずに押せるように。 */
+.project-info-actions {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 6px;
+
+    align-self: center;
+    margin-left: 6px;
+}
+
+/* form が挟まると並び方が変わって高さがずれるので、
+   中のボタンを直接の並び要素として扱う。 */
+.project-info-actions form {
+    display: contents;
+}
+
+.project-info-actions button {
+    height: 28px;
+    padding: 0 11px;
+
+    display: inline-flex;
+    align-items: center;
+
+    line-height: 1;
+}
+
+button.project-copy,
+.project-copy {
+    padding: 5px 11px;
+
+    background: #ffffff;
+    color: #374151;
+
+    border: 1px solid #dfe4ec;
+    border-radius: 7px;
+
+    font-size: 11.5px;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+.project-copy:hover {
+    border-color: #2f6df6;
+    background: #f5f8ff;
+    color: #2f6df6;
+}
+
+@media (max-width: 700px) {
+
+    .project-info-title {
+        font-size: 18px;
+    }
+
+    .project-info-actions {
+        width: 100%;
+    }
+}
+
+
+/* =========================================================
+   列ごとコピー（見出しをダブルクリック）
+   ========================================================= */
+
+.sheet thead th {
+    cursor: copy;
+}
+
+.sheet thead th.is-copied {
+    animation: colCopied 1.2s ease-out;
+}
+
+@keyframes colCopied {
+    from {
+        background: #d7e7ff;
+    }
+    to {
+        background: inherit;
+    }
+}
+
+
+/* =========================================================
+   見出しの編集（「編集」を押したときだけ書き換えられる）
+   ========================================================= */
+
+/* ふだんは編集用の欄を隠し、押したら入れ替える */
+.meta-edit {
+    display: none;
+}
+
+.project-info-head.is-editing .meta-view {
+    display: none;
+}
+
+.project-info-head.is-editing .meta-edit {
+    display: inline-block;
+}
+
+.meta-view-no {
+    padding: 2px 8px;
+
+    background: #eaf1ff;
+    border-radius: 6px;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #2f6df6;
+}
+
+.meta-view-no.is-blank {
+    display: none;
+}
+
+.meta-link {
+    padding: 1px 7px;
+
+    background: #f1f4f8;
+    border-radius: 6px;
+
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.meta-link:hover {
+    background: #eaf1ff;
+    color: #2f6df6;
+}
+
+.edit-field {
+    padding: 1px 6px;
+
+    background: #ffffff;
+    border: 1px solid #dfe4ec;
+    border-radius: 6px;
+
+    outline: none;
+    cursor: text;
+
+    transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.edit-field:focus {
+    border-color: #2f6df6;
+    box-shadow: 0 0 0 3px rgba(47, 109, 246, 0.13);
+}
+
+.edit-field.is-saving {
+    border-color: #cbd5e1;
+}
+
+.edit-field.is-saved {
+    border-color: #6bbf8a;
+    background: #f0faf3;
+}
+
+.edit-field.is-error {
+    border-color: #e08a8a;
+    background: #fdf2f2;
+}
+
+.edit-field.is-empty:not(:focus)::before {
+    content: attr(data-placeholder);
+    color: #b6bfcc;
+    font-weight: 400;
+}
+
+.edit-name {
+    min-width: 120px;
+}
+
+.edit-no {
+    min-width: 46px;
+
+    font-size: 12px;
+    font-weight: 700;
+    color: #2f6df6;
+}
+
+.edit-tag {
+    min-width: 60px;
+
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #374151;
+}
+
+button.project-edit,
+.project-edit {
+    padding: 5px 11px;
+
+    background: #ffffff;
+    color: #374151;
+
+    border: 1px solid #dfe4ec;
+    border-radius: 7px;
+
+    font-size: 11.5px;
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+.project-edit:hover {
+    border-color: #2f6df6;
+    background: #f5f8ff;
+    color: #2f6df6;
+}
+
+.project-edit.is-active {
+    background: #2f6df6;
+    border-color: #2f6df6;
+    color: #ffffff;
+}
+
+.project-info-head.is-editing {
+    padding: 12px;
+    margin: -12px;
+
+    background: #f8fafd;
+    border-radius: 12px;
+}
+
+/* =========================================================
+   横スクロールしても左に残す列（#・キャプチャ・秒数）
+
+   列幅はつまみで変えられるので、貼り付ける位置は
+   JS が実測して --stick-shot / --stick-time に入れる。
+   ここの初期値は、まだ測れていないときの保険。
+   ========================================================= */
+
+.sheet .c-shot {
+    left: var(--stick-shot, 55px);
+}
+
+.sheet .c-time {
+    position: sticky;
+    left: var(--stick-time, 265px);
+    z-index: 24;
+}
+
+.sheet thead .c-time {
+    z-index: 40;
+}
+
+/* 背景が透けると下の列が重なって見えるので、行の色を引き継ぐ */
+.sheet .c-num,
+.sheet .c-shot,
+.sheet .c-time {
+    background: inherit;
+}
+
+/* 区切りと影は、固定するいちばん右の列（秒数）に付け替える */
+.sheet .c-shot {
+    border-right: 1px solid var(--sheet-border);
+}
+
+.sheet .c-shot::after {
+    display: none;
+}
+
+.sheet .c-time {
+    border-right: 2px solid #cbd5e1;
+}
+
+.sheet .c-time::after {
+    content: "";
+
+    position: absolute;
+    top: 0;
+    right: -8px;
+
+    width: 8px;
+    height: 100%;
+
+    pointer-events: none;
+
+    box-shadow: 4px 0 8px rgba(15, 23, 42, 0.08);
+}
+
+/* =========================================================
+   秒数の見出しも固定列として前に出す
+
+   body.page-project の指定があとから z-index を 30 に
+   上書きしていて、秒数の見出しだけ他の列に隠れていた。
+   ========================================================= */
+
+body.page-project .sheet thead th.c-time {
+    z-index: 45;
+}
+
+body.page-project .sheet .c-time {
+    position: sticky;
+    left: var(--stick-time, 265px);
+}
+
+
+/* =========================================================
+   行の操作（動かす・あいだに足す）
+   ========================================================= */
+
+.c-num {
+    position: relative;
+}
+
+.row-move {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 12px;
+    line-height: 1;
+    color: #c3ccd8;
+
+    cursor: grab;
+    user-select: none;
+}
+
+.row-move:hover {
+    color: #2f6df6;
+}
+
+.sheet tbody tr.is-moving {
+    opacity: 0.4;
+}
+
+.sheet tbody tr.is-moving .row-move {
+    cursor: grabbing;
+}
+
+/* 行のあいだに足す ＋。行の下端に重ねて置く */
+button.row-insert,
+.row-insert {
+    position: absolute;
+    left: 50%;
+    bottom: -9px;
+    z-index: 32;
+
+    display: grid;
+    place-items: center;
+
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin-left: -9px;
+
+    background: #ffffff;
+    color: #8b95a5;
+
+    border: 1px solid #dfe4ec;
+    border-radius: 50%;
+
+    font-size: 11px;
+    line-height: 1;
+
+    opacity: 0;
+    transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+
+/* ふだんは隠しておき、その行に近づいたときだけ出す */
+.sheet tbody tr:hover .row-insert,
+.row-insert:focus-visible {
+    opacity: 1;
+}
+
+.row-insert:hover {
+    background: #2f6df6;
+    border-color: #2f6df6;
+    color: #ffffff;
+}
