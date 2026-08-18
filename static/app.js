@@ -2492,6 +2492,9 @@ function toast(
       String(zoom)
     );
 
+    /* 倍率が変わると、固定列を貼り付ける位置も変わる */
+    refreshFrozen();
+
   }
 
 
@@ -4652,8 +4655,19 @@ function initFrozenColumns() {
       return;
     }
 
-    const num = head.children[0].getBoundingClientRect().width;
-    const shot = head.children[1].getBoundingClientRect().width;
+    /*
+       貼り付ける位置は「左にある列の幅の合計」。
+
+       ・getBoundingClientRect の幅は画面上の見た目なので、
+         表示倍率（CSS の zoom）を変えると伸び縮みしてしまう。
+         left は表自身の座標で効くため、そのまま使うとずれる。
+       ・offsetLeft は sticky でずれたあとの位置を返すので、
+         自分で指定した値を測り直すことになり、使えない。
+
+       offsetWidth は表自身の座標での幅なので、これを足していく。
+    */
+    const num = head.children[0].offsetWidth;
+    const shot = head.children[1].offsetWidth;
 
     if (!num || !shot) {
       return;
