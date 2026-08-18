@@ -1182,6 +1182,87 @@ def capture_frame(video_id: int):
     )
 
 
+@app.post("/api/videos/<int:video_id>/reorder")
+def reorder_rows(video_id: int):
+    """
+    行の並べ替え。送られてきた順に番号を振り直す。
+    """
+    data = request.get_json(silent=True) or {}
+
+    ids = data.get("ids")
+
+    if not isinstance(ids, list) or not ids:
+        return jsonify(ok=False, error="並び順がありません。"), 400
+
+    rows = db.query(
+        """
+        SELECT id
+        FROM screenshots
+        WHERE video_id = ?
+          AND deleted_at = ''
+        """,
+        (video_id,),
+    )
+
+    current = sorted(r["id"] for r in rows)
+
+    if sorted(ids) != current:
+        return jsonify(ok=False, error="表の中身が変わっています。"), 409
+
+    for index, shot_id in enumerate(ids, start=1):
+        db.execute(
+            "UPDATE screenshots SET seq = ? WHERE id = ?",
+            (index, shot_id),
+        )
+
+    return jsonify(ok=True, count=len(ids))
+
+
+@app.post("/api/screenshots/<int:shot_id>/insert-after")
+def insert_row_after(shot_id: int):
+    """この行のすぐ下に、空の行を1つ差し込む。"""
+
+    shot = db.query(
+        """
+        SELECT id, video_id, seq
+        FROM screenshots
+        WHERE id = ?
+          AND deleted_at = ''
+        """,
+        (shot_id,),
+        one=True,
+    )
+
+    if shot is None:
+        return jsonify(ok=False, error="行が見つかりません。"), 404
+
+    video_id = shot["video_id"]
+    seq = shot["seq"] + 1
+
+    # 差し込む場所から下を1つずつ後ろへずらす
+    db.execute(
+        """
+        UPDATE screenshots
+        SET seq = seq + 1
+        WHERE video_id = ?
+          AND deleted_at = ''
+          AND seq >= ?
+        """,
+        (video_id, seq),
+    )
+
+    new_id = db.execute(
+        """
+        INSERT INTO screenshots
+            (video_id, seq, image_path, timestamp_sec, is_manual, updated_at)
+        VALUES (?, ?, '', 0, 1, ?)
+        """,
+        (video_id, seq, db.now()),
+    )
+
+    return jsonify(ok=True, id=new_id, seq=seq)
+
+
 @app.post("/api/screenshots/restore")
 def restore_screenshots():
     """ゴミ箱へ移した行を元に戻す。"""

@@ -60,6 +60,10 @@ let buildEmptyRow = function () { return null; };
    これも下の初期化ブロックより先に置くこと。
    ------------------------------------------------------------ */
 
+/* 固定列の貼り付け位置を測り直す処理。列幅を変えたあとにも呼ぶ */
+let refreshFrozen = function () {};
+
+
 const ANALYSIS_FIELDS = [
   'reference_role',
   'material_feature',
@@ -98,6 +102,10 @@ if (root) {
   initRowResize();
 
   initColumnResize();
+
+  initFrozenColumns();
+
+  initRowTools();
 
   initLightbox();
 
@@ -3702,6 +3710,9 @@ function initColumnResize() {
     });
 
     sheet.textContent = rules.join(' ');
+
+    /* 幅が変わると固定列の貼り付け位置もずれる */
+    refreshFrozen();
   }
 
 
@@ -3950,6 +3961,22 @@ function initCapture() {
 
       time.innerHTML = '';
       time.appendChild(seek);
+    }
+
+    /* 撮影した行にも、動かす取っ手と ＋ を付ける */
+    const numCell = tr.querySelector('.c-num');
+
+    if (numCell) {
+      if (!numCell.querySelector('.row-move')) {
+        const move = document.createElement('span');
+        move.className = 'row-move';
+        move.title = 'ドラッグで行を動かせます';
+        move.textContent = '⠿';
+        numCell.insertBefore(move, numCell.querySelector('.row-grip'));
+      }
+
+      const add = numCell.querySelector('.row-insert');
+      if (add) { add.dataset.shot = String(data.id); }
     }
 
     /* 秒数の順になる位置に差し込む（seq は 1 から数えた行番号） */
@@ -4579,5 +4606,265 @@ function initInlineInfo() {
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
+  }
+}
+
+
+/* ============================================================
+   横スクロールで左に残す列の位置あわせ
+
+   #・キャプチャ・秒数 の3列を左に貼り付ける。
+   貼り付ける位置は「その左にある列の幅の合計」なので、
+   列幅をつまみで変えたら測り直す必要がある。
+   ============================================================ */
+
+function initFrozenColumns() {
+
+  const table = document.querySelector('table.sheet');
+
+  if (!table) {
+    return;
+  }
+
+  refreshFrozen = measure;
+
+  measure();
+
+  /* 画面幅が変わると列幅も変わる */
+  window.addEventListener('resize', measure, { passive: true });
+
+  /* 表示倍率の変更や行の追加のあとにも合わせる */
+  if (window.ResizeObserver) {
+    const watch = new ResizeObserver(measure);
+    const head = table.querySelector('thead tr');
+    if (head) {
+      [].slice.call(head.children, 0, 2).forEach(function (cell) {
+        watch.observe(cell);
+      });
+    }
+  }
+
+  function measure() {
+
+    const head = table.querySelector('thead tr');
+
+    if (!head || head.children.length < 3) {
+      return;
+    }
+
+    const num = head.children[0].getBoundingClientRect().width;
+    const shot = head.children[1].getBoundingClientRect().width;
+
+    if (!num || !shot) {
+      return;
+    }
+
+    table.style.setProperty('--stick-shot', num + 'px');
+    table.style.setProperty('--stick-time', (num + shot) + 'px');
+  }
+}
+
+
+/* ============================================================
+   行を動かす・行のあいだに足す
+
+   ・行番号の ⠿ をつかむと、その行を上下に動かせる（全部の行）
+   ・行番号の ＋ を押すと、その行のすぐ下に空の行が入る
+   ============================================================ */
+
+function initRowTools() {
+
+  const tbody = document.getElementById('rows');
+
+  if (!tbody || !tbody.dataset.video) {
+    return;
+  }
+
+  const videoId = tbody.dataset.video;
+
+  /* ---------------- 行を動かす ---------------- */
+
+  let dragging = null;
+
+  tbody.addEventListener('mousedown', function (e) {
+
+    /* つかむところ以外からは動かさない。
+       入力欄を選ぼうとしただけで動くと邪魔になる。 */
+    const grip = e.target.closest('.row-move');
+
+    tbody.querySelectorAll('tr').forEach(function (tr) {
+      tr.draggable = !!grip && tr.contains(grip);
+    });
+  });
+
+  tbody.addEventListener('dragstart', function (e) {
+
+    const tr = e.target.closest('tr');
+
+    if (!tr || !tr.draggable) {
+      e.preventDefault();
+      return;
+    }
+
+    dragging = tr;
+    tr.classList.add('is-moving');
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', tr.dataset.shotRow);
+  });
+
+  tbody.addEventListener('dragover', function (e) {
+
+    if (!dragging) {
+      return;
+    }
+
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    const over = e.target.closest('tr');
+
+    if (!over || over === dragging) {
+      return;
+    }
+
+    const box = over.getBoundingClientRect();
+    const below = e.clientY > box.top + box.height / 2;
+
+    tbody.insertBefore(dragging, below ? over.nextSibling : over);
+  });
+
+  tbody.addEventListener('drop', function (e) {
+    e.preventDefault();
+  });
+
+  tbody.addEventListener('dragend', function () {
+
+    if (!dragging) {
+      return;
+    }
+
+    dragging.classList.remove('is-moving');
+    dragging = null;
+
+    tbody.querySelectorAll('tr').forEach(function (tr) {
+      tr.draggable = false;
+    });
+
+    saveOrder();
+  });
+
+  function saveOrder() {
+
+    const ids = [].slice.call(tbody.querySelectorAll('tr[data-shot-row]'))
+      .map(function (tr) { return parseInt(tr.dataset.shotRow, 10); });
+
+    fetch('/api/videos/' + videoId + '/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: ids }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+
+        if (!res.ok) {
+          throw new Error(res.error || '並べ替えを保存できませんでした');
+        }
+
+        renumber();
+      })
+      .catch(function (err) {
+        toast(err.message + '（元に戻します）', true);
+        setTimeout(function () { location.reload(); }, 1200);
+      });
+  }
+
+  /* ---------------- 行のあいだに足す ---------------- */
+
+  tbody.addEventListener('click', function (e) {
+
+    const btn = e.target.closest('.row-insert');
+
+    if (!btn) {
+      return;
+    }
+
+    btn.disabled = true;
+
+    fetch('/api/screenshots/' + btn.dataset.shot + '/insert-after', {
+      method: 'POST',
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+
+        if (!res.ok) {
+          throw new Error(res.error || '行を足せませんでした');
+        }
+
+        const here = btn.closest('tr');
+        const row = buildEmptyRow(res.id, res.seq);
+
+        if (!row) {
+          location.reload();
+          return;
+        }
+
+        here.after(row);
+
+        /* 足した行にも、動かす取っ手と ＋ を付ける */
+        addRowTools(row, res.id);
+
+        renumber();
+
+        initAutoSave();
+        initMaterialEditor();
+        initRowResize();
+
+        row.classList.add('is-added');
+        setTimeout(function () { row.classList.remove('is-added'); }, 1600);
+      })
+      .catch(function (err) {
+        toast(err.message, true);
+      })
+      .then(function () {
+        btn.disabled = false;
+      });
+  });
+
+  function addRowTools(row, shotId) {
+
+    const cell = row.querySelector('.c-num');
+
+    if (!cell) {
+      return;
+    }
+
+    if (!cell.querySelector('.row-move')) {
+      const move = document.createElement('span');
+      move.className = 'row-move';
+      move.title = 'ドラッグで行を動かせます';
+      move.textContent = '⠿';
+      cell.insertBefore(move, cell.querySelector('.row-grip'));
+    }
+
+    let add = cell.querySelector('.row-insert');
+
+    if (!add) {
+      add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'row-insert';
+      add.title = 'ここに行を足す';
+      add.textContent = '＋';
+      cell.appendChild(add);
+    }
+
+    add.dataset.shot = String(shotId);
+  }
+
+  function renumber() {
+    tbody.querySelectorAll('tr[data-shot-row]').forEach(function (tr, i) {
+      const box = tr.querySelector('.row-seq');
+      if (box) { box.textContent = String(i + 1); }
+    });
   }
 }

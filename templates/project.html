@@ -681,6 +681,7 @@
           data-seek="{{ s.timestamp_sec }}"
           data-shot-row="{{ s.id }}"
           {% if s.is_manual %}data-manual="1"{% endif %}
+          draggable="true"
           {% if s.row_height %}data-h="{{ s.row_height }}"
           style="--row-h: {{ s.row_height }}px"{% endif %}
         >
@@ -697,12 +698,28 @@
 
             <span class="row-seq">{{ s.seq }}</span>
 
+            <!-- つかんで上下に動かす -->
+            <span
+              class="row-move"
+              title="ドラッグで行を動かせます"
+              aria-label="行を動かす"
+            >⠿</span>
+
             <!-- 行の境目をつかんで高さを変える -->
             <span
               class="row-grip"
               data-shot="{{ s.id }}"
               title="ドラッグで行の高さを変える（ダブルクリックで自動に戻す）"
             ></span>
+
+            <!-- この行のすぐ下に空の行を足す -->
+            <button
+              type="button"
+              class="row-insert"
+              data-shot="{{ s.id }}"
+              title="ここに行を足す"
+              aria-label="ここに行を足す"
+            >＋</button>
 
           </td>
 

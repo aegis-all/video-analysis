@@ -5196,3 +5196,151 @@ button.project-edit,
     background: #f8fafd;
     border-radius: 12px;
 }
+
+/* =========================================================
+   横スクロールしても左に残す列（#・キャプチャ・秒数）
+
+   列幅はつまみで変えられるので、貼り付ける位置は
+   JS が実測して --stick-shot / --stick-time に入れる。
+   ここの初期値は、まだ測れていないときの保険。
+   ========================================================= */
+
+.sheet .c-shot {
+    left: var(--stick-shot, 55px);
+}
+
+.sheet .c-time {
+    position: sticky;
+    left: var(--stick-time, 265px);
+    z-index: 24;
+}
+
+.sheet thead .c-time {
+    z-index: 40;
+}
+
+/* 背景が透けると下の列が重なって見えるので、行の色を引き継ぐ */
+.sheet .c-num,
+.sheet .c-shot,
+.sheet .c-time {
+    background: inherit;
+}
+
+/* 区切りと影は、固定するいちばん右の列（秒数）に付け替える */
+.sheet .c-shot {
+    border-right: 1px solid var(--sheet-border);
+}
+
+.sheet .c-shot::after {
+    display: none;
+}
+
+.sheet .c-time {
+    border-right: 2px solid #cbd5e1;
+}
+
+.sheet .c-time::after {
+    content: "";
+
+    position: absolute;
+    top: 0;
+    right: -8px;
+
+    width: 8px;
+    height: 100%;
+
+    pointer-events: none;
+
+    box-shadow: 4px 0 8px rgba(15, 23, 42, 0.08);
+}
+
+/* =========================================================
+   秒数の見出しも固定列として前に出す
+
+   body.page-project の指定があとから z-index を 30 に
+   上書きしていて、秒数の見出しだけ他の列に隠れていた。
+   ========================================================= */
+
+body.page-project .sheet thead th.c-time {
+    z-index: 45;
+}
+
+body.page-project .sheet .c-time {
+    position: sticky;
+    left: var(--stick-time, 265px);
+}
+
+
+/* =========================================================
+   行の操作（動かす・あいだに足す）
+   ========================================================= */
+
+.c-num {
+    position: relative;
+}
+
+.row-move {
+    display: block;
+
+    margin-top: 3px;
+
+    font-size: 12px;
+    line-height: 1;
+    color: #c3ccd8;
+
+    cursor: grab;
+    user-select: none;
+}
+
+.row-move:hover {
+    color: #2f6df6;
+}
+
+.sheet tbody tr.is-moving {
+    opacity: 0.4;
+}
+
+.sheet tbody tr.is-moving .row-move {
+    cursor: grabbing;
+}
+
+/* 行のあいだに足す ＋。行の下端に重ねて置く */
+button.row-insert,
+.row-insert {
+    position: absolute;
+    left: 50%;
+    bottom: -9px;
+    z-index: 32;
+
+    display: grid;
+    place-items: center;
+
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin-left: -9px;
+
+    background: #ffffff;
+    color: #8b95a5;
+
+    border: 1px solid #dfe4ec;
+    border-radius: 50%;
+
+    font-size: 11px;
+    line-height: 1;
+
+    opacity: 0;
+    transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+
+/* ふだんは隠しておき、その行に近づいたときだけ出す */
+.sheet tbody tr:hover .row-insert,
+.row-insert:focus-visible {
+    opacity: 1;
+}
+
+.row-insert:hover {
+    background: #2f6df6;
+    border-color: #2f6df6;
+    color: #ffffff;
+}
