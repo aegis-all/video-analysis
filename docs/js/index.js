@@ -283,12 +283,17 @@
         const path = project.id + '/' + Date.now() + '-' + safeName(file.name);
         await API.Files.upload('videos', path, file);
 
-        await API.Videos.create({
+        const made = await API.Videos.create({
           project_id: project.id,
           original_name: file.name,
           storage_path: path,
           status: 'queued',
         });
+
+        /* いま選んだファイルを案件ページまで持ち越す。
+           持ち越せると、送ったばかりの動画をもらい直さずに切り出せる */
+        note.textContent = '場面の切り出しを始めます…';
+        await Detection.keep(made.id, file);
 
       } else if (!useFile && url) {
 

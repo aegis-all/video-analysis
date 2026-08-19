@@ -109,6 +109,8 @@ if (root) {
 
   initTextMove();
 
+  initBoxResize();
+
   initLightbox();
 
   initPolling();
@@ -1358,11 +1360,12 @@ function initAutoSave() {
 
   function autoGrow(ta) {
 
-    /* 行の高さを手で決めている行では、
-       入力欄の高さは CSS（--row-h）に任せる。
-       ここで inline style を書くと CSS より優先されてしまう。 */
+    /* 行の高さを手で決めている行では、入力欄の高さは CSS に任せる。
+       ただし、その欄の角をつかんで広げたあとは、その高さを残す。 */
     if (ta.closest('tr[data-h]')) {
-      ta.style.removeProperty('height');
+      if (!ta.hasAttribute('data-resized')) {
+        ta.style.removeProperty('height');
+      }
       return;
     }
 
@@ -4907,15 +4910,40 @@ function initTextMove() {
 
   let fromRow = null;
 
+  /* 前回の名残を消す。
+     ドラッグが途中で終わると dragend が来ないことがあり、
+     薄いまま・つかんだままの欄が残ってしまう。 */
+  function reset() {
+    tbody.querySelectorAll('.c-text').forEach(function (cell) {
+      cell.draggable = false;
+      cell.classList.remove('is-moving', 'is-target');
+    });
+    fromRow = null;
+  }
+
   tbody.addEventListener('mousedown', function (e) {
+
+    reset();
 
     const grip = e.target.closest('.text-move');
 
     /* つかむところ以外からは動かさない。
        欄の中の文字を選びたいだけのときに動くと邪魔になる。 */
-    tbody.querySelectorAll('.c-text').forEach(function (cell) {
-      cell.draggable = !!grip && cell.contains(grip);
-    });
+    if (grip) {
+      const cell = grip.closest('.c-text');
+      if (cell) { cell.draggable = true; }
+    }
+  });
+
+  /* 動かさずに離しただけなら、つかんだ状態を解く。
+     そのままだと、その欄の文字を選べなくなる。 */
+  document.addEventListener('mouseup', function () {
+    if (!fromRow) { reset(); }
+  });
+
+  /* 画面の外でドラッグをやめたときの取りこぼし */
+  document.addEventListener('dragend', function () {
+    reset();
   });
 
   tbody.addEventListener('dragstart', function (e) {
@@ -4980,13 +5008,7 @@ function initTextMove() {
   });
 
   tbody.addEventListener('dragend', function () {
-
-    tbody.querySelectorAll('.c-text').forEach(function (cell) {
-      cell.draggable = false;
-      cell.classList.remove('is-moving', 'is-target');
-    });
-
-    fromRow = null;
+    reset();
   });
 
 
@@ -5050,4 +5072,59 @@ function initTextMove() {
 
     toast('テキストを ' + (a + 1) + ' 行目から ' + (b + 1) + ' 行目へ移しました');
   }
+}
+
+
+/* ============================================================
+   入力欄の角をつかんで広げたことを覚える
+
+   行の高さを決めた行では、入力欄の高さを CSS で合わせている。
+   そのままだと、あとから欄の角をつかんで広げても
+   次の入力で元に戻ってしまう。手で広げた欄には印を付けて、
+   その高さを残すようにする。
+   ============================================================ */
+
+function initBoxResize() {
+
+  const tbody = document.getElementById('rows');
+
+  if (!tbody) {
+    return;
+  }
+
+  let watching = null;
+  let before = 0;
+
+  tbody.addEventListener('pointerdown', function (e) {
+
+    const box = e.target.closest('textarea');
+
+    if (!box) {
+      watching = null;
+      return;
+    }
+
+    /* 右下の角のあたりを押したときだけ見る */
+    const r = box.getBoundingClientRect();
+    const corner = e.clientX > r.right - 20 && e.clientY > r.bottom - 20;
+
+    watching = corner ? box : null;
+    before = corner ? r.height : 0;
+  });
+
+  document.addEventListener('pointerup', function () {
+
+    if (!watching) {
+      return;
+    }
+
+    const after = watching.getBoundingClientRect().height;
+
+    if (Math.abs(after - before) > 2) {
+      watching.setAttribute('data-resized', '1');
+      watching.style.height = after + 'px';
+    }
+
+    watching = null;
+  });
 }

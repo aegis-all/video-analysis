@@ -2253,10 +2253,12 @@ body.is-resizing-row {
     max-width: 100%;
 }
 
-.sheet tbody tr[data-h] textarea {
-    /* 入力欄は自動リサイズが inline style を書くことがあるので、
-       手で高さを決めた行ではこちらを優先させる。 */
-    height: calc(var(--row-h) - 26px) !important;
+/* 行の高さを手で決めた行では、入力欄の高さもそれに合わせる。
+   ただし !important は付けない。付けると、入力欄の角をつかんで
+   広げても効かなくなる（inline の指定が負けるため）。
+   自動で伸ばす処理のほうは autoGrow 側で避けている。 */
+.sheet tbody tr[data-h] textarea:not([data-resized]) {
+    height: calc(var(--row-h) - 26px);
     min-height: 0;
 }
 
@@ -5379,8 +5381,11 @@ button.row-insert,
     color: #0f9f8f;
 }
 
+/* つかんでいる最中だけ薄くする。
+   opacity だと枠まで薄くなって「壊れて見える」ので、
+   中の文字だけを淡くする。 */
 .c-text.is-moving textarea {
-    opacity: 0.4;
+    color: #b6bfcc;
 }
 
 .c-text.is-moving .text-move {

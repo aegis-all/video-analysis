@@ -32,6 +32,11 @@ CREATE TABLE IF NOT EXISTS projects (
     -- メンバー別の集計に使う担当ユーザー。0 なら未割当。
     owner_user_id  INTEGER NOT NULL DEFAULT 0,
 
+    -- 「コピーを作成」で作られた案件は、元の案件の id。
+    -- 共通ノートで「同じ指摘が何件の案件で出たか」を数えるとき、
+    -- コピーどうしは1件として扱うために使う。
+    copied_from    INTEGER NOT NULL DEFAULT 0,
+
     created_at  TEXT    NOT NULL,
     updated_at  TEXT    NOT NULL
 );
@@ -195,6 +200,7 @@ def init_db() -> None:
             "status_at": "TEXT NOT NULL DEFAULT ''",
             "board_order": "INTEGER NOT NULL DEFAULT 0",
             "owner_user_id": "INTEGER NOT NULL DEFAULT 0",
+            "copied_from": "INTEGER NOT NULL DEFAULT 0",
         }
 
         for column, definition in project_columns.items():

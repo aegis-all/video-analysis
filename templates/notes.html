@@ -101,7 +101,8 @@
     </form>
 
     <p class="notes-meta">
-      入力のある案件は全部で {{ project_total }} 件。
+      入力のある案件は全部で {{ project_total }} 件
+      （コピーで増えたものは元と同じ1件として数えています）。
       そのうち {{ threshold }} 件以上に出てくるものが
       <b>{{ items|length }}</b> 件見つかりました。
     </p>
@@ -121,7 +122,9 @@
 
         <div class="note-head">
 
-          <span class="note-count">{{ item.project_count }}件</span>
+          <span class="note-count"
+                {% if item.copy_count %}title="コピーで増えた {{ item.copy_count }} 件は数えていません"{% endif %}
+          >{{ item.project_count }}件</span>
 
           <p class="note-text">{{ item.text }}</p>
 

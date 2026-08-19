@@ -2290,6 +2290,7 @@ def notes_page():
         f"""
         SELECT p.id AS project_id, p.name AS project_name,
                p.slug AS slug, p.project_no AS project_no,
+               p.copied_from AS copied_from,
                {columns}
         FROM screenshots s
         JOIN videos v ON v.id = s.video_id
@@ -2331,31 +2332,45 @@ def notes_page():
                     "name": row["project_name"],
                     "slug": row["slug"],
                     "project_no": row["project_no"],
+                    # コピーで増えたぶんを1件と数えるための目印
+                    "family": row["copied_from"] or row["project_id"],
                 }
 
-    project_total = db.query(
+    total_rows = db.query(
         """
-        SELECT COUNT(DISTINCT p.id) AS n
+        SELECT DISTINCT p.id AS id, p.copied_from AS copied_from
         FROM projects p
         JOIN videos v ON v.project_id = p.id
         JOIN screenshots s ON s.video_id = v.id AND s.deleted_at = ''
-        """,
-        one=True,
+        """
     )
 
-    project_total = (project_total["n"] if project_total else 0) or 0
+    # コピーは元と同じ1件として数える
+    project_total = len({r["copied_from"] or r["id"] for r in total_rows})
 
-    items = [
-        {
+    def families(projects):
+        """コピーどうしは1つとして数える。"""
+        return {p["family"] for p in projects}
+
+    items = []
+
+    for v in found.values():
+
+        projects = list(v["projects"].values())
+        family_count = len(families(projects))
+
+        if family_count < threshold:
+            continue
+
+        items.append({
             "text": v["text"],
             "count": v["count"],
-            "projects": list(v["projects"].values()),
-            "project_count": len(v["projects"]),
+            "projects": projects,
+            "project_count": family_count,
+            # 「3件のうち2件は同じ案件のコピー」と分かるように
+            "copy_count": len(projects) - family_count,
             "fields": sorted(v["fields"]),
-        }
-        for v in found.values()
-        if len(v["projects"]) >= threshold
-    ]
+        })
 
     items.sort(key=lambda i: (-i["project_count"], -i["count"], i["text"]))
 
@@ -2616,8 +2631,8 @@ def copy_project(project_id: int):
         INSERT INTO projects
             (genre, name, project_no, slug, assignee,
              status, status_at, board_order, owner_user_id,
-             created_at, updated_at)
-        VALUES (?, ?, '', ?, ?, 'todo', ?, 0, ?, ?, ?)
+             copied_from, created_at, updated_at)
+        VALUES (?, ?, '', ?, ?, 'todo', ?, 0, ?, ?, ?, ?)
         """,
         (
             project["genre"],
@@ -2626,6 +2641,8 @@ def copy_project(project_id: int):
             project["assignee"],
             db.now(),
             user["id"] if user else 0,
+            # コピー元をたどれるようにする。元がコピーならその元をたどる
+            project["copied_from"] or project["id"],
             db.now(),
             db.now(),
         ),

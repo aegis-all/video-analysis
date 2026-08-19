@@ -156,6 +156,177 @@
     document.getElementById('no-video').hidden = false;
   }
 
+
+  /* ------------------------------------------------------------
+     処理中・失敗の知らせ
+
+     動画の切り出しは、この画面を開いている間に進む。
+     進み具合は app.js が videos の行を見に来て、バーに映す。
+     ------------------------------------------------------------ */
+
+  if (current && current.status === 'error') { showError(current); }
+
+  if (current && (current.status === 'queued' || current.status === 'running')) {
+    showProcessing();
+    startDetection(current);
+  }
+
+  function panelBefore(html) {
+    const box = document.createElement('div');
+    box.innerHTML = html;
+    const node = box.firstElementChild;
+    root.insertBefore(node, document.getElementById('player-wrap'));
+    return node;
+  }
+
+  function showProcessing() {
+    panelBefore(
+      '<div class="panel processing" id="processing">'
+      + '<h3>動画を処理しています</h3>'
+      + '<p>スクリーンショットを生成しています。しばらくお待ちください。'
+      + '<br><span class="muted">この画面を開いたままにしてください。'
+      + '閉じると途中で止まります。</span></p>'
+      + '<div class="bar"><div class="bar-fill" id="bar-fill" style="width:0%"></div></div>'
+      + '<p class="muted" id="stage">準備しています</p>'
+      + '</div>');
+  }
+
+  function showError(video) {
+
+    const node = panelBefore(
+      '<div class="panel error">'
+      + '<h3>動画処理に失敗しました</h3>'
+      + '<pre>' + Shell.escapeHtml(video.error_message || '') + '</pre>'
+      + '<div class="row">'
+      + '<button type="button" class="primary" id="video-retry">もう一度実行</button>'
+      + '<button type="button" class="danger" id="video-delete">この動画を削除</button>'
+      + '</div></div>');
+
+    node.querySelector('#video-retry').addEventListener('click', async function (e) {
+      e.currentTarget.disabled = true;
+      await API.db.from('videos')
+        .update({ status: 'queued', progress: 0, stage: '', error_message: null })
+        .eq('id', video.id);
+      location.reload();
+    });
+
+    node.querySelector('#video-delete').addEventListener('click', async function (e) {
+
+      if (!window.confirm('この動画と、そこから作った行をすべて削除します。')) { return; }
+
+      e.currentTarget.disabled = true;
+
+      const shotRows = await API.Shots.ofVideo(video.id);
+
+      const paths = shotRows.map(function (s) { return s.storage_path; }).filter(Boolean);
+
+      if (paths.length) { await API.Files.remove('screenshots', paths); }
+
+      /* 同じファイルを見ている案件（コピー）が残っていないときだけ消す */
+      if (video.storage_path) {
+
+        const { data: sharing } = await API.db.from('videos')
+          .select('id').eq('storage_path', video.storage_path).neq('id', video.id);
+
+        if (!sharing || !sharing.length) {
+          await API.Files.remove('videos', [video.storage_path]);
+        }
+      }
+
+      await API.Videos.remove(video.id);
+      await Detection.drop(video.id);
+
+      location.href = 'project.html?p=' + encodeURIComponent(project.slug || project.id);
+    });
+  }
+
+  function startDetection(video) {
+    Detection.run(video).catch(function (err) {
+      Shell.toast('動画を処理できませんでした（' + err.message + '）', true);
+    });
+  }
+
+
+  /* ------------------------------------------------------------
+     あとから動画を足す
+
+     すでに空の器（動画なしで作った30行）があれば、そこへ入れる。
+     新しく足すと、書いておいた下書きが取り残されてしまう。
+     ------------------------------------------------------------ */
+
+  const addForm = document.getElementById('add-video-form');
+
+  if (addForm) {
+    addForm.addEventListener('submit', async function (e) {
+
+      e.preventDefault();
+
+      const submit = document.getElementById('add-video-submit');
+      const note = document.getElementById('add-video-note');
+
+      const file = document.getElementById('video').files[0];
+      const url = (document.getElementById('video_url').value || '').trim();
+
+      if (!file && !url) {
+        Shell.toast('動画ファイルを選ぶか、動画のリンクを入力してください。', true);
+        return;
+      }
+
+      submit.disabled = true;
+
+      try {
+
+        const fields = { status: 'queued', progress: 0, stage: '準備しています' };
+
+        if (file) {
+
+          note.textContent = '動画を送っています…（'
+            + (file.size / 1048576).toFixed(0) + 'MB）';
+
+          const path = project.id + '/' + Date.now() + '-'
+            + (file.name || 'video').replace(/[^\w.\-]+/g, '_').slice(-80);
+
+          await API.Files.upload('videos', path, file);
+
+          fields.original_name = file.name;
+          fields.storage_path = path;
+          fields.source_url = '';
+
+        } else {
+
+          fields.original_name = url.split('/').pop() || 'video.mp4';
+          fields.storage_path = '';
+          fields.source_url = url;
+        }
+
+        /* 空の器があればそこへ入れる */
+        const empty = videos.find(function (v) { return v.status === 'none'; });
+
+        let target;
+
+        if (empty) {
+          await API.db.from('videos').update(fields).eq('id', empty.id);
+          target = empty.id;
+        } else {
+          fields.project_id = project.id;
+          fields.version_label = '初稿';
+          fields.sort_order = videos.length;
+          target = (await API.Videos.create(fields)).id;
+        }
+
+        if (file) { await Detection.keep(target, file); }
+
+        location.href = 'project.html?p='
+          + encodeURIComponent(project.slug || project.id) + '&v=' + target;
+
+      } catch (err) {
+        Shell.toast('追加できませんでした（' + err.message + '）', true);
+        note.textContent = '';
+        submit.disabled = false;
+      }
+    });
+  }
+
   /* 動画の URL は署名付き。しばらく経つと切れるので長めに取る */
   if (current && (current.storage_path || current.source_url)) {
 
@@ -283,11 +454,26 @@
     try {
       const name = project.name + 'のコピー';
 
-      const made = await API.Projects.create({
+      const fields = {
         genre: project.genre, name: name, project_no: '',
         slug: await API.Projects.makeSlug(name, ''),
         assignee: project.assignee, owner_id: me.user.id,
-      });
+        /* どの案件から分かれたものかを覚えておく。
+           共通ノートで、コピーどうしを1件として数えるために使う。
+           コピーのコピーも、いちばん元の案件を指す */
+        copied_from: project.copied_from || project.id,
+      };
+
+      let made;
+
+      try {
+        made = await API.Projects.create(fields);
+      } catch (err) {
+        /* copied_from はあとから足した列なので、まだ無いこともある */
+        if (!/copied_from/.test(err.message)) { throw err; }
+        delete fields.copied_from;
+        made = await API.Projects.create(fields);
+      }
 
       for (const v of videos) {
 
