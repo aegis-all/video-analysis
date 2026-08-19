@@ -76,6 +76,11 @@
           + esc(u.display_name || '') + '" data-id="' + u.id + '"'
           + ' aria-label="表示名">'
           + '<button type="button" data-save="' + u.id + '">変更</button>'
+          + (hasApproved && !mine
+            ? '<button type="button" class="users-approve" data-approve="' + u.id + '"'
+              + ' data-to="' + (u.approved ? '0' : '1') + '">'
+              + (u.approved ? '承認を外す' : '承認する') + '</button>'
+            : '')
           + '</span></td>'
           + '</tr>';
       }).join('')
@@ -96,13 +101,17 @@
       + '</p>'
       + '<p class="note-hint">'
       + '招いた人は、はじめは<b>未承認</b>で、案件が何も見えません。'
-      + 'Table Editor → profiles → その人の approved に印を付けると使えるようになります。'
+      + 'この画面の「承認する」を押すと使えるようになります。'
       + '（知らない人が勝手に登録しても中身を見られないようにするための仕組みです）'
       + '</p>'
       + '</section>';
 
     page.querySelectorAll('[data-save]').forEach(function (btn) {
       btn.addEventListener('click', function () { save(btn); });
+    });
+
+    page.querySelectorAll('[data-approve]').forEach(function (btn) {
+      btn.addEventListener('click', function () { approve(btn); });
     });
   }
 
@@ -131,6 +140,39 @@
     }
 
     Shell.toast('表示名を「' + name + '」にしました');
+
+    await render();
+  }
+
+  /**
+   * 使ってよい人の印を付け外しする。
+   *
+   * 印の無い人には案件が何も見えない。
+   * 知らない人が自分で登録しても中身を見られないようにするための仕組み。
+   */
+  async function approve(btn) {
+
+    const id = btn.dataset.approve;
+    const to = btn.dataset.to === '1';
+
+    if (!to && !window.confirm(
+      'この人の承認を外します。外すと案件が何も見えなくなります。')) {
+      return;
+    }
+
+    btn.disabled = true;
+
+    const { error } = await API.db
+      .from('profiles').update({ approved: to }).eq('id', id);
+
+    btn.disabled = false;
+
+    if (error) {
+      Shell.toast('変えられませんでした（' + error.message + '）', true);
+      return;
+    }
+
+    Shell.toast(to ? '承認しました' : '承認を外しました');
 
     await render();
   }
