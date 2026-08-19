@@ -131,7 +131,7 @@
       async run(m, body) {
         const allowed = ['reference_role', 'material_feature', 'improvement_note',
           'reference_feedback', 'text_raw', 'material', 'role',
-          'scene_feeling', 'feedback', 'row_height'];
+          'scene_feeling', 'feedback', 'revised_feedback', 'row_height'];
 
         const fields = {};
 
