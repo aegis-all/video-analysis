@@ -6,6 +6,7 @@ import json
 import logging
 import mimetypes
 import os
+import re
 import socket
 import sys
 import threading
@@ -206,6 +207,7 @@ ALLOWED_FIELDS = {
     "role",
     "scene_feeling",
     "feedback",
+    "revised_feedback",
     "row_height",
 }
 
@@ -1182,6 +1184,170 @@ def capture_frame(video_id: int):
     )
 
 
+# ============================================================
+# セルの結合
+#
+# 表の縦横に並んだセルを、ひとつにまとめる。
+# まとめた左上のセルに中身を寄せ、覆われたセルは空にする。
+# （中身を捨てないよう、寄せるときに改行でつないでおく）
+#
+# 画面には全部のセルを出したうえで、覆われたセルを隠して見せている。
+# こうしておくと、行を足したり並べ替えたりしても組み直せる。
+# ============================================================
+
+def _strip_tags(html: str) -> str:
+    """素材欄の中身を、ほかの欄に混ぜても読める形にする。"""
+    text = re.sub("<br[^>]*>", chr(10), html or "")
+    text = re.sub(r"<[^>]+>", "", text)
+    return text.strip()
+
+
+@app.post("/api/videos/<int:video_id>/merges")
+def create_merge(video_id: int):
+
+    data = request.get_json(silent=True) or {}
+
+    cells = data.get("cells") or []
+
+    row_span = max(1, int(data.get("row_span") or 1))
+    col_span = max(1, int(data.get("col_span") or 1))
+
+    if len(cells) < 2:
+        return jsonify(ok=False, error="2つ以上のセルを選んでください。"), 400
+
+    if row_span * col_span != len(cells):
+        return jsonify(ok=False, error="選び方が四角になっていません。"), 400
+
+    picked = []
+
+    for cell in cells:
+
+        field = str(cell.get("field") or "")
+        shot_id = int(cell.get("shot_id") or 0)
+
+        if field not in MERGE_FIELDS:
+            return jsonify(ok=False, error="この列は結合できません。"), 400
+
+        row = db.query(
+            """
+            SELECT *
+            FROM screenshots
+            WHERE id = ?
+              AND video_id = ?
+              AND deleted_at = ''
+            """,
+            (shot_id, video_id),
+            one=True,
+        )
+
+        if row is None:
+            return jsonify(ok=False, error="行が見つかりません。"), 404
+
+        picked.append((row, field))
+
+    head_row, head_field = picked[0]
+
+    # 中身を寄せる。空でないものだけを、選んだ順につなぐ
+    parts = []
+
+    for row, field in picked:
+
+        value = row[field] or ""
+
+        if field == "material" and head_field != "material":
+            value = _strip_tags(value)
+
+        value = value.strip()
+
+        if value and value not in parts:
+            parts.append(value)
+
+    joined = chr(10).join(parts)
+
+    now = db.now()
+
+    for row, field in picked:
+
+        db.execute(
+            f"UPDATE screenshots SET {field} = ?, updated_at = ? WHERE id = ?",
+            (joined if (row["id"], field) == (head_row["id"], head_field) else "",
+             now, row["id"]),
+        )
+
+        # 選んだ中に前の結合があれば、いったん外す
+        db.execute(
+            "DELETE FROM cell_merges WHERE shot_id = ? AND field = ?",
+            (row["id"], field),
+        )
+
+    db.execute(
+        """
+        INSERT INTO cell_merges
+            (video_id, shot_id, field, row_span, col_span, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (video_id, head_row["id"], head_field, row_span, col_span, now),
+    )
+
+    return jsonify(
+        ok=True,
+        shot_id=head_row["id"],
+        field=head_field,
+        row_span=row_span,
+        col_span=col_span,
+        text=joined,
+    )
+
+
+@app.post("/api/videos/<int:video_id>/merges/delete")
+def delete_merge(video_id: int):
+    """結合を外す。中身は左上のセルに残したままにする。"""
+
+    data = request.get_json(silent=True) or {}
+
+    cells = data.get("cells") or []
+
+    if not cells:
+        return jsonify(ok=False, error="外すものがありません。"), 400
+
+    removed = 0
+
+    for cell in cells:
+
+        shot_id = int(cell.get("shot_id") or 0)
+        field = str(cell.get("field") or "")
+
+        # db.execute は消した件数を返さないので、先に数えておく
+        found = db.query(
+            """
+            SELECT COUNT(*) AS n
+            FROM cell_merges
+            WHERE video_id = ?
+              AND shot_id = ?
+              AND field = ?
+            """,
+            (video_id, shot_id, field),
+            one=True,
+        )
+
+        if not (found and found["n"]):
+            continue
+
+        db.execute(
+            """
+            DELETE FROM cell_merges
+            WHERE video_id = ?
+              AND shot_id = ?
+              AND field = ?
+            """,
+            (video_id, shot_id, field),
+        )
+
+        removed += found["n"]
+
+    return jsonify(ok=True, removed=removed)
+
+
 @app.post("/api/videos/<int:video_id>/reorder")
 def reorder_rows(video_id: int):
     """
@@ -1417,6 +1583,7 @@ REUSE_FIELDS = (
     "role",
     "scene_feeling",
     "feedback",
+    "revised_feedback",
 )
 
 SIDES = ("analysis", "reuse", "other")
@@ -2554,6 +2721,8 @@ def project_page(key: str):
             videos=[],
             current=None,
             shots=[],
+            merges=[],
+            is_revision=False,
         )
 
     requested_video = request.args.get(
@@ -2587,12 +2756,28 @@ def project_page(key: str):
         (current["id"],),
     )
 
+    merges = [
+        {
+            "shot_id": m["shot_id"],
+            "field": m["field"],
+            "row_span": m["row_span"],
+            "col_span": m["col_span"],
+        }
+        for m in db.query(
+            "SELECT * FROM cell_merges WHERE video_id = ?",
+            (current["id"],),
+        )
+    ]
+
     return render_template(
         "project.html",
         project=project,
         videos=videos,
         current=current,
         shots=shots,
+        merges=merges,
+        # 修正版には「修正後フィードバックメモ」の列が増える
+        is_revision=current["sort_order"] > 0,
     )
 
 
@@ -2730,6 +2915,185 @@ def copy_project(project_id: int):
     )
 
     return redirect(_project_url(new_id))
+
+
+# ============================================================
+# 修正版
+#
+# 同じ案件の中に、いまの版をまるごと写した「修正版」を足す。
+# 初稿 → 修正① → 修正② と横に並んでいく。
+#
+# キャプチャから右端のフィードバックメモまで、中身はすべて引き継ぐ。
+# 修正版にだけ「修正後フィードバックメモ」の列が増える。
+#
+# 動画のファイルは複製せず、同じものを見に行く。
+# 1案件で 200MB 近くになるため、版を足すたびに増やさない。
+# ============================================================
+
+# 修正版の番号。丸数字が尽きたら普通の数字にする
+_CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
+
+
+def _revision_label(n: int) -> str:
+    """1 なら「修正①」、21 なら「修正21」。"""
+    if 1 <= n <= len(_CIRCLED):
+        return f"修正{_CIRCLED[n - 1]}"
+
+    return f"修正{n}"
+
+
+# 結合してよい列。番号・キャプチャ・秒数は、横に固定して見せている
+# 都合で結合できない（ずれて表が崩れる）。
+MERGE_FIELDS = (
+    "reference_role",
+    "material_feature",
+    "improvement_note",
+    "reference_feedback",
+    "text_raw",
+    "material",
+    "role",
+    "scene_feeling",
+    "feedback",
+    "revised_feedback",
+)
+
+
+@app.post("/projects/<int:project_id>/versions")
+def add_version(project_id: int):
+
+    project = db.query(
+        "SELECT * FROM projects WHERE id = ?",
+        (project_id,),
+        one=True,
+    )
+
+    if project is None:
+        abort(404)
+
+    videos = db.query(
+        """
+        SELECT *
+        FROM videos
+        WHERE project_id = ?
+        ORDER BY sort_order ASC, id ASC
+        """,
+        (project_id,),
+    )
+
+    if not videos:
+        return _error_page(
+            "写すもとの版がありません。先に動画を追加してください。"
+        )
+
+    source_id = request.form.get("from", type=int)
+
+    source = next(
+        (v for v in videos if v["id"] == source_id),
+        videos[-1],
+    )
+
+    new_video = db.execute(
+        """
+        INSERT INTO videos
+            (project_id, version_label, original_name, file_path,
+             source_url, duration_sec, status, progress, stage,
+             sort_order, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 100, '', ?, ?)
+        """,
+        (
+            project_id,
+            _revision_label(len(videos)),
+            source["original_name"],
+            source["file_path"],
+            source["source_url"],
+            source["duration_sec"],
+            source["status"],
+            len(videos),
+            db.now(),
+        ),
+    )
+
+    shots = db.query(
+        """
+        SELECT *
+        FROM screenshots
+        WHERE video_id = ?
+          AND deleted_at = ''
+        ORDER BY seq ASC, id ASC
+        """,
+        (source["id"],),
+    )
+
+    # 結合したセルも写せるよう、写す前と後の行の対応を覚えておく
+    same_row = {}
+
+    for shot in shots:
+
+        same_row[shot["id"]] = db.execute(
+            """
+            INSERT INTO screenshots
+                (video_id, seq, image_path, timestamp_sec, row_height,
+                 is_manual,
+                 reference_role, material_feature,
+                 improvement_note, reference_feedback,
+                 text_raw, material, role, scene_feeling, feedback,
+                 revised_feedback,
+                 updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                new_video,
+                shot["seq"],
+                shot["image_path"],
+                shot["timestamp_sec"],
+                shot["row_height"],
+                shot["is_manual"],
+                shot["reference_role"],
+                shot["material_feature"],
+                shot["improvement_note"],
+                shot["reference_feedback"],
+                shot["text_raw"],
+                shot["material"],
+                shot["role"],
+                shot["scene_feeling"],
+                shot["feedback"],
+                shot["revised_feedback"],
+                db.now(),
+            ),
+        )
+
+    for merge in db.query(
+        "SELECT * FROM cell_merges WHERE video_id = ?",
+        (source["id"],),
+    ):
+
+        if merge["shot_id"] not in same_row:
+            continue
+
+        db.execute(
+            """
+            INSERT INTO cell_merges
+                (video_id, shot_id, field, row_span, col_span, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                new_video,
+                same_row[merge["shot_id"]],
+                merge["field"],
+                merge["row_span"],
+                merge["col_span"],
+                db.now(),
+            ),
+        )
+
+    db.touch_project(project_id)
+
+    logging.getLogger("app").info(
+        "修正版を作りました: 案件 %s / %s -> %s（%s行）",
+        project_id, source["id"], new_video, len(shots),
+    )
+
+    return redirect(_project_url(project_id, new_video))
 
 
 @app.post("/api/projects/<int:project_id>/info")

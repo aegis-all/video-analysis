@@ -314,6 +314,118 @@
       },
     },
 
+    /* ---------------- セルの結合 ---------------- */
+    {
+      test: /^\/api\/videos\/(\d+)\/merges$/,
+      async run(m, body) {
+
+        const videoId = Number(m[1]);
+        const cells = body.cells || [];
+
+        const rowSpan = Math.max(1, Number(body.row_span) || 1);
+        const colSpan = Math.max(1, Number(body.col_span) || 1);
+
+        if (cells.length < 2) {
+          return reply({ ok: false, error: '2つ以上のセルを選んでください。' }, 400);
+        }
+
+        if (rowSpan * colSpan !== cells.length) {
+          return reply({ ok: false, error: '選び方が四角になっていません。' }, 400);
+        }
+
+        for (const cell of cells) {
+          if (!MERGE_FIELDS.includes(cell.field)) {
+            return reply({ ok: false, error: 'この列は結合できません。' }, 400);
+          }
+        }
+
+        const ids = cells.map(function (c) { return Number(c.shot_id); });
+
+        const { data: rows, error } = await API.db
+          .from('screenshots')
+          .select('*')
+          .eq('video_id', videoId)
+          .in('id', ids)
+          .is('deleted_at', null);
+
+        if (error) { return reply({ ok: false, error: error.message }, 400); }
+
+        const byId = {};
+        (rows || []).forEach(function (r) { byId[r.id] = r; });
+
+        if (cells.some(function (c) { return !byId[Number(c.shot_id)]; })) {
+          return reply({ ok: false, error: '行が見つかりません。' }, 404);
+        }
+
+        const head = cells[0];
+
+        /* 中身を寄せる。空でないものだけを、選んだ順につなぐ */
+        const parts = [];
+
+        cells.forEach(function (cell) {
+
+          let value = byId[Number(cell.shot_id)][cell.field] || '';
+
+          if (cell.field === 'material' && head.field !== 'material') {
+            value = stripTags(value);
+          }
+
+          value = value.trim();
+
+          if (value && parts.indexOf(value) === -1) { parts.push(value); }
+        });
+
+        const joined = parts.join('\n');
+
+        for (const cell of cells) {
+
+          const isHead = Number(cell.shot_id) === Number(head.shot_id)
+            && cell.field === head.field;
+
+          const fields = {};
+          fields[cell.field] = isHead ? joined : '';
+
+          await API.Shots.update(Number(cell.shot_id), fields);
+
+          /* 選んだ中に前の結合があれば、いったん外す */
+          await API.db.from('cell_merges').delete()
+            .eq('shot_id', Number(cell.shot_id)).eq('field', cell.field);
+        }
+
+        await API.Merges.insertMany([{
+          video_id: videoId, shot_id: Number(head.shot_id), field: head.field,
+          row_span: rowSpan, col_span: colSpan,
+        }]);
+
+        return reply({
+          ok: true,
+          shot_id: Number(head.shot_id),
+          field: head.field,
+          row_span: rowSpan,
+          col_span: colSpan,
+          text: joined,
+        });
+      },
+    },
+    {
+      test: /^\/api\/videos\/(\d+)\/merges\/delete$/,
+      async run(m, body) {
+
+        const videoId = Number(m[1]);
+        const cells = body.cells || [];
+
+        if (!cells.length) {
+          return reply({ ok: false, error: '外すものがありません。' }, 400);
+        }
+
+        for (const cell of cells) {
+          await API.Merges.remove(videoId, Number(cell.shot_id), cell.field);
+        }
+
+        return reply({ ok: true, removed: cells.length });
+      },
+    },
+
     /* ---------------- 進み具合の問い合わせ ---------------- */
     {
       test: /^\/api\/videos\/(\d+)\/status$/,
@@ -329,6 +441,22 @@
 
 
   /* ---------------- 補助 ---------------- */
+
+  /* 結合してよい列。番号・キャプチャ・秒数は、横に固定して見せている
+     都合で結合できない（ずれて表が崩れる） */
+  const MERGE_FIELDS = [
+    'reference_role', 'material_feature', 'improvement_note', 'reference_feedback',
+    'text_raw', 'material', 'role', 'scene_feeling', 'feedback', 'revised_feedback',
+  ];
+
+  /** 素材欄の中身を、ほかの欄に混ぜても読める形にする */
+  function stripTags(html) {
+    return String(html || '')
+      .replace(/<br[^>]*>/g, '\n')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+  }
+
 
   /** 番号を 1 から振り直して、残った行数を返す */
   async function renumber(videoId) {

@@ -39,6 +39,8 @@
   data-column-widths="{{ project.column_widths or '' }}"
   data-video-id="{{ current.id if current else '' }}"
   data-status="{{ current.status if current else 'none' }}"
+  data-merges="{{ merges|tojson|forceescape }}"
+  data-revision="{{ 1 if is_revision else 0 }}"
 >
 
   <!-- ========================================================
@@ -311,6 +313,26 @@
 
       {% endfor %}
 
+      <span class="version-arrow" aria-hidden="true">→</span>
+
+      <form
+        method="post"
+        action="{{ url_for('add_version', project_id=project.id) }}"
+        class="version-add-form"
+      >
+
+        <input type="hidden" name="from" value="{{ current.id }}">
+
+        <button
+          type="submit"
+          class="version-add"
+          title="いまの版をまるごと写して、修正版を1つ足します（中身はそのまま残ります）"
+        >
+          ＋ 修正版
+        </button>
+
+      </form>
+
     </nav>
 
   </div>
@@ -566,6 +588,46 @@
   </div>
 
 
+  <!-- セルを選んだときに出る。結合と、結合の取り消し -->
+  <div class="cell-merge-bar" id="cell-merge-bar" hidden>
+
+    <span class="cell-merge-text">
+      <strong id="cell-merge-count">0</strong> セル選択
+    </span>
+
+    <button
+      type="button"
+      class="cell-merge-run"
+      id="cell-merge-run"
+      title="選んだセルをひとつにまとめます。中身は左上のセルにまとめて残ります"
+    >
+      結合
+    </button>
+
+    <button
+      type="button"
+      class="cell-merge-split"
+      id="cell-merge-split"
+      title="まとめたセルを元の数に戻します"
+    >
+      結合を解除
+    </button>
+
+    <button
+      type="button"
+      class="cell-merge-clear"
+      id="cell-merge-clear"
+    >
+      選択を解除
+    </button>
+
+    <span class="cell-merge-hint">
+      Ctrl＋クリックで起点、Shift＋クリックで範囲
+    </span>
+
+  </div>
+
+
   <!-- 削除したあとに出る「元に戻す」 -->
   <div
     class="row-undo"
@@ -667,6 +729,13 @@
             フィードバックメモ
             <span class="col-grip" data-col="11" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
           </th>
+
+          {% if is_revision %}
+          <th class="result-group c-revised">
+            修正後フィードバックメモ
+            <span class="col-grip" data-col="12" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span>
+          </th>
+          {% endif %}
 
         </tr>
 
@@ -897,6 +966,22 @@
             >{{ s.feedback }}</textarea>
 
           </td>
+
+
+          <!-- 修正版だけ：直したあとのFBメモ -->
+
+          {% if is_revision %}
+          <td class="c-revised">
+
+            <textarea
+              data-shot="{{ s.id }}"
+              data-field="revised_feedback"
+              rows="3"
+              placeholder="修正後フィードバックメモ"
+            >{{ s.revised_feedback }}</textarea>
+
+          </td>
+          {% endif %}
 
         </tr>
 

@@ -281,6 +281,46 @@ const Shots = {
 
 
 /* ------------------------------------------------------------
+   結合したセル
+
+   まとめた左上のセルと、そこから何行ぶん・何列ぶん広がるかを持つ。
+   ------------------------------------------------------------ */
+
+const Merges = {
+
+  async ofVideo(videoId) {
+
+    const { data, error } = await db
+      .from('cell_merges')
+      .select('shot_id, field, row_span, col_span')
+      .eq('video_id', videoId);
+
+    /* 表をまだ作っていないときでも、画面は出したい */
+    if (error) { return []; }
+
+    return data || [];
+  },
+
+  async insertMany(list) {
+    const { error } = await db.from('cell_merges').insert(list);
+    if (error) { throw new Error(error.message); }
+  },
+
+  async remove(videoId, shotId, field) {
+
+    const { error } = await db
+      .from('cell_merges')
+      .delete()
+      .eq('video_id', videoId)
+      .eq('shot_id', shotId)
+      .eq('field', field);
+
+    if (error) { throw new Error(error.message); }
+  },
+};
+
+
+/* ------------------------------------------------------------
    ファイル
    ------------------------------------------------------------ */
 
@@ -427,7 +467,7 @@ const Guidelines = {
 
 
 window.API = {
-  db, Auth, Projects, Videos, Shots, Files, WorkTime, Settings, Guidelines,
+  db, Auth, Projects, Videos, Shots, Merges, Files, WorkTime, Settings, Guidelines,
 };
 
 }());

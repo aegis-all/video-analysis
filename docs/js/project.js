@@ -133,14 +133,23 @@
   root.dataset.videoId = current ? current.id : '';
   root.dataset.status = current ? current.status : 'none';
 
-  if (videos.length > 1) {
+  /* 修正版が何番目かを表す丸数字。尽きたら普通の数字にする */
+  const CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
+
+  function revisionLabel(n) {
+    return '修正' + (n >= 1 && n <= CIRCLED.length ? CIRCLED[n - 1] : String(n));
+  }
+
+  if (videos.length && current && current.status !== 'none') {
+
     const wrap = document.getElementById('version-wrap');
     const nav = document.getElementById('version-steps');
     wrap.hidden = false;
 
-    nav.innerHTML = videos.map(function (v) {
+    nav.innerHTML = videos.map(function (v, i) {
       const on = current && v.id === current.id;
-      return '<a class="version-step' + (on ? ' is-current' : '')
+      return (i ? '<span class="version-arrow" aria-hidden="true">→</span>' : '')
+        + '<a class="version-step' + (on ? ' is-current' : '')
         + (v.status === 'error' ? ' is-error'
           : (v.status !== 'done' && v.status !== 'none' ? ' is-working' : '')) + '"'
         + ' href="project.html?p=' + encodeURIComponent(project.slug || project.id)
@@ -149,7 +158,25 @@
         + '</span>'
         + '<span class="version-step-date">' + Shell.stamp(v.created_at) + '</span>'
         + '</a>';
-    }).join('');
+    }).join('')
+      + '<span class="version-arrow" aria-hidden="true">→</span>'
+      + '<button type="button" class="version-add" id="version-add"'
+      + ' title="いまの版をまるごと写して、修正版を1つ足します（中身はそのまま残ります）">'
+      + '＋ 修正版</button>';
+
+    document.getElementById('version-add')
+      .addEventListener('click', function (e) { addRevision(e.currentTarget); });
+  }
+
+  /* 修正版には「修正後フィードバックメモ」の列が増える */
+  const isRevision = !!(current && current.sort_order > 0);
+
+  if (isRevision) {
+    document.querySelector('.sheet thead tr').insertAdjacentHTML(
+      'beforeend',
+      '<th class="result-group c-revised">修正後フィードバックメモ'
+      + '<span class="col-grip" data-col="12"'
+      + ' title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>');
   }
 
   if (!current || current.status === 'none') {
@@ -346,6 +373,10 @@
 
   const shots = current ? await API.Shots.ofVideo(current.id) : [];
 
+  /* 結合したセル。app.js がこれを見て表を組み直す */
+  root.dataset.merges = JSON.stringify(
+    current ? await API.Merges.ofVideo(current.id) : []);
+
   const tbody = document.getElementById('rows');
   tbody.dataset.video = current ? current.id : '';
 
@@ -429,6 +460,10 @@
       + cell('role', '役割')
       + cell('scene_feeling', 'シーン後の気持ち')
       + cell('feedback', 'フィードバックメモ')
+
+      /* 修正版だけ：直したあとのフィードバックメモ */
+      + (isRevision
+        ? cell('revised_feedback', '修正後フィードバックメモ', 'c-revised') : '')
 
       + '</tr>';
   }
@@ -516,6 +551,105 @@
       btn.textContent = 'コピーを作成';
     }
   });
+
+
+  /* ------------------------------------------------------------
+     修正版を作る
+
+     いまの版をまるごと写して、同じ案件の中に1つ足す。
+     キャプチャから右端のフィードバックメモまで、中身はすべて残る。
+     動画のファイルは複製せず、同じものを見に行く。
+     ------------------------------------------------------------ */
+
+  async function addRevision(btn) {
+
+    if (!current) { return; }
+
+    if (!window.confirm(
+      'いまの版（' + current.version_label + '）を写して、修正版を作ります。'
+      + '\n'
+      + 'キャプチャから右端のフィードバックメモまで、中身はそのまま残ります。')) {
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '作成中…';
+
+    try {
+
+      const made = await API.Videos.create({
+        project_id: project.id,
+        version_label: revisionLabel(videos.length),
+        original_name: current.original_name,
+        /* ファイルは複製せず、同じものを見る */
+        storage_path: current.storage_path,
+        source_url: current.source_url,
+        duration_sec: current.duration_sec,
+        status: current.status,
+        sort_order: videos.length,
+      });
+
+      const source = await API.Shots.ofVideo(current.id);
+
+      if (source.length) {
+
+        await API.Shots.insertMany(source.map(function (s) {
+          return {
+            video_id: made.id, seq: s.seq,
+            storage_path: s.storage_path,
+            timestamp_sec: s.timestamp_sec,
+            row_height: s.row_height, is_manual: s.is_manual,
+            reference_role: s.reference_role,
+            material_feature: s.material_feature,
+            improvement_note: s.improvement_note,
+            reference_feedback: s.reference_feedback,
+            text_raw: s.text_raw,
+            material: s.material,
+            role: s.role,
+            scene_feeling: s.scene_feeling,
+            feedback: s.feedback,
+            revised_feedback: s.revised_feedback || '',
+          };
+        }));
+
+        /* 結合したセルも写す。写す前と後の行は、番号（seq）で結びつける */
+        const merges = await API.Merges.ofVideo(current.id);
+
+        if (merges.length) {
+
+          const before = {};
+          source.forEach(function (s) { before[s.id] = s.seq; });
+
+          const after = {};
+          (await API.Shots.ofVideo(made.id)).forEach(function (s) {
+            after[s.seq] = s.id;
+          });
+
+          const moved = merges
+            .filter(function (m) { return after[before[m.shot_id]]; })
+            .map(function (m) {
+              return {
+                video_id: made.id,
+                shot_id: after[before[m.shot_id]],
+                field: m.field,
+                row_span: m.row_span,
+                col_span: m.col_span,
+              };
+            });
+
+          if (moved.length) { await API.Merges.insertMany(moved); }
+        }
+      }
+
+      location.href = 'project.html?p='
+        + encodeURIComponent(project.slug || project.id) + '&v=' + made.id;
+
+    } catch (err) {
+      Shell.toast('修正版を作れませんでした（' + err.message + '）', true);
+      btn.disabled = false;
+      btn.textContent = '＋ 修正版';
+    }
+  }
 
 
   /* ------------------------------------------------------------

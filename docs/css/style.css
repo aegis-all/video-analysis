@@ -1710,7 +1710,8 @@ body.page-project .project {
 .database-sort-panel[hidden],
 .filter-panel[hidden],
 .row-delete-bar[hidden],
-.row-undo[hidden] {
+.row-undo[hidden],
+.cell-merge-bar[hidden] {
     display: none;
 }
 
@@ -5411,4 +5412,143 @@ button.row-insert,
     to {
         background: inherit;
     }
+}
+
+
+/* =========================================================
+   修正版を足すボタン
+
+   版の並びの右端に置く。押すといまの版がまるごと写る。
+   ========================================================= */
+
+.version-add-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.version-add {
+    padding: 7px 13px;
+
+    background: #ffffff;
+    border: 1px dashed #b9c3d1;
+    border-radius: 9px;
+
+    color: #4b6b9c;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+
+    transition:
+        border-color 0.12s ease,
+        background 0.12s ease,
+        color 0.12s ease;
+}
+
+.version-add:hover {
+    background: #f2f7ff;
+    border-color: #7ea2d8;
+    color: #2563eb;
+}
+
+
+/* =========================================================
+   セルの結合
+
+   画面には全部のセルを出したうえで、覆われたセルを隠している。
+   こうしておくと、行を足したり並べ替えたりしても組み直せる。
+   ========================================================= */
+
+.sheet td.is-covered {
+    display: none;
+}
+
+/* まとめたセル。ふつうのセルと見分けが付く程度にとどめる */
+.sheet td.is-merged {
+    background-image:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%,
+                                rgba(37, 99, 235, 0) 22px);
+}
+
+/* いま選んでいるセル */
+.sheet td.is-picked {
+    position: relative;
+    background-color: #eef4ff;
+}
+
+.sheet td.is-picked::after {
+    content: "";
+
+    position: absolute;
+    inset: 1px;
+
+    border: 2px solid #2563eb;
+    border-radius: 4px;
+
+    pointer-events: none;
+}
+
+
+/* 選んだときに出る操作の帯 */
+.cell-merge-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    margin: 0 0 8px;
+    padding: 4px 10px;
+
+    background: #eef4ff;
+    border: 1px solid #c9dcf7;
+    border-radius: 999px;
+
+    font-size: 12px;
+    color: #2a4a75;
+}
+
+.cell-merge-text strong {
+    font-size: 13px;
+}
+
+.cell-merge-bar button {
+    padding: 3px 12px;
+
+    border: 1px solid #c9dcf7;
+    border-radius: 999px;
+
+    background: #ffffff;
+    color: #2a4a75;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cell-merge-bar button:hover:not(:disabled) {
+    background: #dbe8fb;
+}
+
+.cell-merge-bar button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.cell-merge-run:not(:disabled) {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+
+.cell-merge-run:not(:disabled):hover {
+    background: #1d4ed8;
+}
+
+.cell-merge-hint {
+    color: #6b86ad;
+    font-size: 11px;
+}
+
+
+/* 修正後フィードバックメモ。ほかの入力欄と同じ幅にしておく */
+.sheet .c-revised {
+    min-width: 150px;
 }

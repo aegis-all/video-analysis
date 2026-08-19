@@ -63,6 +63,9 @@ let buildEmptyRow = function () { return null; };
 /* 固定列の貼り付け位置を測り直す処理。列幅を変えたあとにも呼ぶ */
 let refreshFrozen = function () {};
 
+/* セルの結合を組み直す。行が増減したときに呼ぶ */
+let reapplyMerges = function () {};
+
 
 const ANALYSIS_FIELDS = [
   'reference_role',
@@ -77,6 +80,7 @@ const REUSE_FIELDS = [
   'role',
   'scene_feeling',
   'feedback',
+  'revised_feedback',
 ];
 
 
@@ -124,6 +128,8 @@ if (root) {
   initCapture();
 
   initColumnCopy();
+
+  initCellMerge();
 
   initInlineInfo();
 
@@ -5127,4 +5133,460 @@ function initBoxResize() {
 
     watching = null;
   });
+}
+
+
+/* ============================================================
+   セルの結合
+
+   表の縦横に並んだセルを、ひとつにまとめる。
+
+   ・Ctrl（Mac は ⌘）を押しながらセルを押すと、そこが起点になる
+   ・Shift を押しながら別のセルを押すと、その四角ぜんぶが選ばれる
+   ・「結合」で1つになる。中身は左上のセルに寄せてつなぐので、
+     どこかの文字が消えてしまうことはない
+
+   画面には全部のセルを出したうえで、覆われたセルを隠して見せている。
+   こうしておくと、行を足したり並べ替えたりしても組み直せる。
+
+   番号・キャプチャ・秒数は横に固定して見せているため、結合できない。
+   ============================================================ */
+
+function initCellMerge() {
+
+  const tbody = document.getElementById('rows');
+  const bar = document.getElementById('cell-merge-bar');
+
+  if (!tbody || !bar || !root) {
+    return;
+  }
+
+  const videoId = root.dataset.videoId;
+
+  const countBox = document.getElementById('cell-merge-count');
+  const runBtn = document.getElementById('cell-merge-run');
+  const splitBtn = document.getElementById('cell-merge-split');
+  const clearBtn = document.getElementById('cell-merge-clear');
+
+  let merges = [];
+
+  try {
+    merges = JSON.parse(root.dataset.merges || '[]');
+  } catch (err) {
+    merges = [];
+  }
+
+  /* 選んでいる四角。{ r0, c0, r1, c1 } */
+  let area = null;
+
+  /* 起点。Shift でつかむときの角になる */
+  let start = null;
+
+
+  /* ------------------------------------------------------------
+     表の中身を見る
+     ------------------------------------------------------------ */
+
+  function rows() {
+    return [].slice.call(tbody.querySelectorAll('tr'));
+  }
+
+  function cellsOf(tr) {
+    return [].slice.call(tr.children);
+  }
+
+  /** そのセルの欄の名前。番号・キャプチャ・秒数には無い */
+  function fieldOf(td) {
+    const box = td.querySelector('[data-field]');
+    return box ? box.dataset.field : '';
+  }
+
+  /** 押されたところが表のどのセルかを返す */
+  function findCell(target) {
+
+    const td = target.closest ? target.closest('td') : null;
+
+    if (!td || !tbody.contains(td)) {
+      return null;
+    }
+
+    const tr = td.parentElement;
+    const r = rows().indexOf(tr);
+    const c = cellsOf(tr).indexOf(td);
+
+    return (r < 0 || c < 0) ? null : { r: r, c: c, td: td, tr: tr };
+  }
+
+
+  /* ------------------------------------------------------------
+     結合を画面に反映する
+
+     覆われたセルには印を付けて隠し、左上のセルを広げる。
+     ------------------------------------------------------------ */
+
+  function applyMerges() {
+
+    const list = rows();
+
+    list.forEach(function (tr) {
+      cellsOf(tr).forEach(function (td) {
+        td.removeAttribute('rowspan');
+        td.removeAttribute('colspan');
+        td.classList.remove('is-merged', 'is-covered');
+      });
+    });
+
+    merges.forEach(function (m) {
+
+      const tr = tbody.querySelector('tr[data-shot-row="' + m.shot_id + '"]');
+
+      if (!tr) {
+        return;
+      }
+
+      const box = tr.querySelector('[data-field="' + m.field + '"]');
+
+      if (!box) {
+        return;
+      }
+
+      const td = box.closest('td');
+
+      const r0 = list.indexOf(tr);
+      const c0 = cellsOf(tr).indexOf(td);
+
+      /* 行が減っていたら、残っているぶんに収める */
+      const rowSpan = Math.min(m.row_span, list.length - r0);
+      const colSpan = Math.min(m.col_span, cellsOf(tr).length - c0);
+
+      if (rowSpan < 1 || colSpan < 1 || (rowSpan === 1 && colSpan === 1)) {
+        return;
+      }
+
+      td.rowSpan = rowSpan;
+      td.colSpan = colSpan;
+      td.classList.add('is-merged');
+
+      for (let r = r0; r < r0 + rowSpan; r += 1) {
+        for (let c = c0; c < c0 + colSpan; c += 1) {
+
+          if (r === r0 && c === c0) {
+            continue;
+          }
+
+          const covered = cellsOf(list[r])[c];
+
+          if (covered) {
+            covered.classList.add('is-covered');
+          }
+        }
+      }
+    });
+
+    refreshFrozen();
+  }
+
+  reapplyMerges = applyMerges;
+
+
+  /* ------------------------------------------------------------
+     選ぶ
+     ------------------------------------------------------------ */
+
+  function paint() {
+
+    const list = rows();
+
+    list.forEach(function (tr) {
+      cellsOf(tr).forEach(function (td) {
+        td.classList.remove('is-picked');
+      });
+    });
+
+    if (!area) {
+      bar.hidden = true;
+      return;
+    }
+
+    let n = 0;
+
+    for (let r = area.r0; r <= area.r1; r += 1) {
+      for (let c = area.c0; c <= area.c1; c += 1) {
+
+        const td = list[r] && cellsOf(list[r])[c];
+
+        if (td) {
+          td.classList.add('is-picked');
+          n += 1;
+        }
+      }
+    }
+
+    countBox.textContent = String(n);
+    bar.hidden = false;
+
+    runBtn.disabled = n < 2;
+    splitBtn.disabled = !mergesInArea().length;
+  }
+
+  /** いま選んでいる中にある結合 */
+  function mergesInArea() {
+
+    if (!area) {
+      return [];
+    }
+
+    const list = rows();
+    const found = [];
+
+    for (let r = area.r0; r <= area.r1; r += 1) {
+
+      const tr = list[r];
+
+      if (!tr) {
+        continue;
+      }
+
+      for (let c = area.c0; c <= area.c1; c += 1) {
+
+        const td = cellsOf(tr)[c];
+
+        if (!td || !td.classList.contains('is-merged')) {
+          continue;
+        }
+
+        found.push({ shot_id: Number(tr.dataset.shotRow), field: fieldOf(td) });
+      }
+    }
+
+    return found;
+  }
+
+  function clear() {
+    area = null;
+    start = null;
+    paint();
+  }
+
+
+  tbody.addEventListener('mousedown', function (e) {
+
+    const pick = (e.ctrlKey || e.metaKey) || e.shiftKey;
+
+    if (!pick) {
+      return;
+    }
+
+    const cell = findCell(e.target);
+
+    if (!cell) {
+      return;
+    }
+
+    /* 選んでいる最中に文字まで選ばれると見づらいので止める */
+    e.preventDefault();
+
+    if (e.shiftKey && start) {
+
+      area = {
+        r0: Math.min(start.r, cell.r),
+        r1: Math.max(start.r, cell.r),
+        c0: Math.min(start.c, cell.c),
+        c1: Math.max(start.c, cell.c),
+      };
+
+    } else {
+
+      start = { r: cell.r, c: cell.c };
+      area = { r0: cell.r, r1: cell.r, c0: cell.c, c1: cell.c };
+    }
+
+    paint();
+  });
+
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && area) {
+      clear();
+    }
+  });
+
+
+  clearBtn.addEventListener('click', clear);
+
+
+  /* ------------------------------------------------------------
+     結合する
+     ------------------------------------------------------------ */
+
+  runBtn.addEventListener('click', function () {
+
+    if (!area || !videoId) {
+      return;
+    }
+
+    const list = rows();
+    const cells = [];
+
+    for (let r = area.r0; r <= area.r1; r += 1) {
+
+      const tr = list[r];
+
+      if (!tr) {
+        toast('行が足りません。', true);
+        return;
+      }
+
+      for (let c = area.c0; c <= area.c1; c += 1) {
+
+        const td = cellsOf(tr)[c];
+        const field = td ? fieldOf(td) : '';
+
+        if (!field) {
+          toast('番号・キャプチャ・秒数の列は結合できません。', true);
+          return;
+        }
+
+        cells.push({ shot_id: Number(tr.dataset.shotRow), field: field });
+      }
+    }
+
+    runBtn.disabled = true;
+
+    fetch('/api/videos/' + videoId + '/merges', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cells: cells,
+        row_span: area.r1 - area.r0 + 1,
+        col_span: area.c1 - area.c0 + 1,
+      }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+
+        if (!data.ok) {
+          throw new Error(data.error || '結合できませんでした');
+        }
+
+        /* 中身の寄せ直しを画面にも反映する */
+        cells.forEach(function (cell, i) {
+          writeCell(cell, i === 0 ? data.text : '');
+        });
+
+        merges = merges.filter(function (m) {
+          return !cells.some(function (cell) {
+            return m.shot_id === cell.shot_id && m.field === cell.field;
+          });
+        });
+
+        merges.push({
+          shot_id: data.shot_id, field: data.field,
+          row_span: data.row_span, col_span: data.col_span,
+        });
+
+        applyMerges();
+        clear();
+
+        toast(cells.length + ' つのセルを結合しました');
+      })
+      .catch(function (err) {
+        toast('結合できませんでした（' + err.message + '）', true);
+      })
+      .then(function () {
+        runBtn.disabled = false;
+      });
+  });
+
+
+  /** 画面側の入力欄にも書き戻す */
+  function writeCell(cell, value) {
+
+    const tr = tbody.querySelector('tr[data-shot-row="' + cell.shot_id + '"]');
+
+    if (!tr) {
+      return;
+    }
+
+    const box = tr.querySelector('[data-field="' + cell.field + '"]');
+
+    if (!box) {
+      return;
+    }
+
+    if (box.tagName === 'TEXTAREA') {
+      box.value = value;
+      delete box.dataset.saved;
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      box.innerHTML = value.replace(/\n/g, '<br>');
+    }
+  }
+
+
+  /* ------------------------------------------------------------
+     結合を外す
+     ------------------------------------------------------------ */
+
+  splitBtn.addEventListener('click', function () {
+
+    const targets = mergesInArea();
+
+    if (!targets.length || !videoId) {
+      return;
+    }
+
+    splitBtn.disabled = true;
+
+    fetch('/api/videos/' + videoId + '/merges/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cells: targets }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+
+        if (!data.ok) {
+          throw new Error(data.error || '外せませんでした');
+        }
+
+        merges = merges.filter(function (m) {
+          return !targets.some(function (t) {
+            return m.shot_id === t.shot_id && m.field === t.field;
+          });
+        });
+
+        applyMerges();
+        clear();
+
+        toast('結合を解除しました');
+      })
+      .catch(function (err) {
+        toast('外せませんでした（' + err.message + '）', true);
+      })
+      .then(function () {
+        splitBtn.disabled = false;
+      });
+  });
+
+
+  /* ------------------------------------------------------------
+     行が増えたり減ったりしたら組み直す
+     ------------------------------------------------------------ */
+
+  let waiting = null;
+
+  new MutationObserver(function () {
+
+    clearTimeout(waiting);
+
+    waiting = setTimeout(function () {
+      applyMerges();
+      if (area) { paint(); }
+    }, 30);
+
+  }).observe(tbody, { childList: true });
+
+
+  applyMerges();
 }

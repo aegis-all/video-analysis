@@ -150,6 +150,36 @@ CREATE TABLE IF NOT EXISTS guidelines (
     created_by INTEGER NOT NULL DEFAULT 0,
     created_at TEXT    NOT NULL
 );
+
+
+/*
+   結合したセル。
+
+   表の縦横に並んだセルをひとつにまとめたもの。
+   まとめた左上のセル（shot_id と field）を覚えておき、
+   そこから何行ぶん・何列ぶん広がるかを持つ。
+
+   画面には全部のセルを出したうえで、覆われたセルを隠して見せている。
+   こうしておくと、行を足したり並べ替えたりしても組み直せる。
+*/
+CREATE TABLE IF NOT EXISTS cell_merges (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_id   INTEGER NOT NULL,
+    shot_id    INTEGER NOT NULL,
+    field      TEXT    NOT NULL,
+    row_span   INTEGER NOT NULL DEFAULT 1,
+    col_span   INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT    NOT NULL DEFAULT '',
+
+    FOREIGN KEY (video_id) REFERENCES videos(id)   ON DELETE CASCADE,
+    FOREIGN KEY (shot_id)  REFERENCES screenshots(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS cell_merges_video_idx
+    ON cell_merges (video_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS cell_merges_cell_key
+    ON cell_merges (shot_id, field);
 """
 
 
@@ -265,6 +295,8 @@ def init_db() -> None:
             "row_height": "INTEGER NOT NULL DEFAULT 0",
             "deleted_at": "TEXT NOT NULL DEFAULT ''",
             "is_manual": "INTEGER NOT NULL DEFAULT 0",
+            # 修正版でだけ使う、修正したあとのフィードバック
+            "revised_feedback": "TEXT NOT NULL DEFAULT ''",
         }
 
         for column, definition in screenshot_columns.items():

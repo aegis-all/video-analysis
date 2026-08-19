@@ -25,7 +25,7 @@
        ======================================================== -->
 
   <div class="version-steps-wrap" id="version-wrap" hidden>
-    <nav class="version-steps" id="version-steps"></nav>
+    <nav class="version-steps version-timeline" id="version-steps"></nav>
   </div>
 
 
@@ -148,6 +148,19 @@
     <button type="button" class="row-delete-clear" id="row-delete-clear">解除</button>
   </div>
 
+  <!-- セルを選んだときに出る。結合と、結合の取り消し -->
+  <div class="cell-merge-bar" id="cell-merge-bar" hidden>
+    <span class="cell-merge-text">
+      <strong id="cell-merge-count">0</strong> セル選択
+    </span>
+    <button type="button" class="cell-merge-run" id="cell-merge-run"
+            title="選んだセルをひとつにまとめます。中身は左上のセルにまとめて残ります">結合</button>
+    <button type="button" class="cell-merge-split" id="cell-merge-split"
+            title="まとめたセルを元の数に戻します">結合を解除</button>
+    <button type="button" class="cell-merge-clear" id="cell-merge-clear">選択を解除</button>
+    <span class="cell-merge-hint">Ctrl＋クリックで起点、Shift＋クリックで範囲</span>
+  </div>
+
   <div class="row-undo" id="row-undo" hidden>
     <span class="row-undo-text"></span>
     <button type="button" class="row-undo-button">元に戻す</button>
@@ -195,6 +208,7 @@
             <span class="col-grip" data-col="10" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
           <th class="result-group">フィードバックメモ
             <span class="col-grip" data-col="11" title="ドラッグで列幅を変える（ダブルクリックで自動に戻す）"></span></th>
+          <!-- 修正後フィードバックメモ。修正版のときだけ project.js が足す -->
         </tr>
       </thead>
 
