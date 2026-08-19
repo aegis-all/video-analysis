@@ -109,10 +109,21 @@ class Supabase:
             extra={"x-upsert": "true"},
         )
 
+    def patch(self, table: str, where: str, fields: dict) -> None:
+        self._request("PATCH", f"/rest/v1/{table}?{where}", body=fields)
+
     def delete_all(self, table: str) -> None:
         key = "key" if table == "settings" else "id"
         op = "neq.__none__" if key == "key" else "gt.0"
         self._request("DELETE", f"/rest/v1/{table}?{key}={op}")
+
+    def has(self, table: str, column: str = "id") -> bool:
+        """向こうにその表と列があるか。無ければ移す前に止めたい。"""
+        try:
+            self._request("GET", f"/rest/v1/{table}?select={column}&limit=1")
+            return True
+        except RuntimeError:
+            return False
 
     def list_users(self) -> list:
         out = self._request("GET", "/auth/v1/admin/users?per_page=200")
@@ -171,7 +182,7 @@ def rows(conn, sql: str) -> list:
 def summary(conn) -> None:
     print("― 移すもの ―")
 
-    for table in ("projects", "videos", "screenshots",
+    for table in ("projects", "videos", "screenshots", "cell_merges",
                   "material_images", "work_time", "guidelines", "settings"):
         try:
             n = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
@@ -195,7 +206,11 @@ def summary(conn) -> None:
 
     print()
     print("― 先に手で用意していただくもの ―")
-    print("  ・supabase/schema.sql を SQL Editor で実行")
+    print("  ・SQL Editor で順に実行")
+    print("      schema.sql")
+    print("      002_copy_lineage.sql")
+    print("      003_members_only.sql")
+    print("      004_versions_and_merges.sql")
     print("  ・いまの4名を Supabase Auth に招待（メールアドレスは同じもの）")
 
 
@@ -228,6 +243,24 @@ def main() -> int:
         return 1
 
     sb = Supabase(env["SUPABASE_URL"], env["SUPABASE_SERVICE_KEY"])
+
+    # ---- 向こう側の用意 ----------------------------------------------------
+    # 列や表が足りないまま流すと、途中で止まって中途半端に入ってしまう。
+    missing = []
+
+    for table, column, sql in (
+        ("projects", "copied_from", "002_copy_lineage.sql"),
+        ("screenshots", "revised_feedback", "004_versions_and_merges.sql"),
+        ("cell_merges", "id", "004_versions_and_merges.sql"),
+    ):
+        if not sb.has(table, column):
+            missing.append((table, column, sql))
+
+    if missing:
+        print("― 先に SQL Editor で流してください ―")
+        for table, column, sql in missing:
+            print(f"  {table}.{column} がありません → supabase/{sql}")
+        return 1
 
     if args.reset:
         print("― 入れ直しのため、Supabase 側を空にします ―")
@@ -278,6 +311,25 @@ def main() -> int:
         made = sb.insert("projects", [body])
         project_map[p["id"]] = made[0]["id"]
         print(f"  {p['name'][:24]:<26} → id={made[0]['id']}")
+
+    # コピーで増えた案件は、元をたどれるようにしておく。
+    # 共通ノートで、コピーどうしを1件として数えるために使う。
+    lineage = 0
+
+    for p in rows(conn, "SELECT id, copied_from FROM projects WHERE copied_from <> 0"):
+
+        if p["id"] not in project_map or p["copied_from"] not in project_map:
+            continue
+
+        sb.patch(
+            "projects",
+            f"id=eq.{project_map[p['id']]}",
+            {"copied_from": project_map[p["copied_from"]]},
+        )
+        lineage += 1
+
+    if lineage:
+        print(f"  コピー元の結びつけ {lineage} 件")
 
     # ---- 動画 -------------------------------------------------------------
     print()
@@ -353,6 +405,7 @@ def main() -> int:
             "role": s["role"] or "",
             "scene_feeling": s["scene_feeling"] or "",
             "feedback": s["feedback"] or "",
+            "revised_feedback": s.get("revised_feedback") or "",
             "deleted_at": s["deleted_at"] or None,
         }
 
@@ -360,6 +413,25 @@ def main() -> int:
         shot_map[s["id"]] = made[0]["id"]
 
     print(f"  {len(shots)} 行 / 画像 {sent} 枚")
+
+    # ---- 結合したセル -------------------------------------------------------
+    merges = []
+
+    for m in rows(conn, "SELECT * FROM cell_merges"):
+
+        if m["video_id"] not in video_map or m["shot_id"] not in shot_map:
+            continue
+
+        merges.append({
+            "video_id": video_map[m["video_id"]],
+            "shot_id": shot_map[m["shot_id"]],
+            "field": m["field"],
+            "row_span": m["row_span"] or 1,
+            "col_span": m["col_span"] or 1,
+        })
+
+    sb.insert("cell_merges", merges)
+    print(f"  結合したセル {len(merges)} 件")
 
     # ---- 作業時間・設定・ガイドライン ---------------------------------------
     print()
