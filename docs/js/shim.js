@@ -426,6 +426,66 @@
       },
     },
 
+    /* ---------------- いま誰がどのセルを見ているか ---------------- */
+    {
+      test: /^\/api\/presence$/,
+      async run(m, body) {
+
+        const videoId = Number(body.video_id) || 0;
+
+        if (!videoId) { return reply({ ok: true, people: [] }); }
+
+        const me = await API.Auth.user();
+
+        if (!me) { return reply({ ok: false, error: 'ログインが必要です。' }, 401); }
+
+        const { data: profile } = await API.db
+          .from('profiles').select('display_name').eq('id', me.id).maybeSingle();
+
+        const now = new Date();
+
+        const { error } = await API.db.from('presence').upsert({
+          video_id: videoId,
+          user_id: me.id,
+          shot_id: Number(body.shot_id) || 0,
+          field: String(body.field || '').slice(0, 40),
+          name: (profile && profile.display_name) || '',
+          updated_at: now.toISOString(),
+        }, { onConflict: 'video_id,user_id' });
+
+        /* 表をまだ作っていないときは、黙って何も出さない */
+        if (error) { return reply({ ok: true, people: [] }); }
+
+        const cutoff = new Date(now.getTime() - ALIVE_MS).toISOString();
+
+        /* 古くなった行はここで捨てる。貯め込まないため */
+        await API.db.from('presence').delete().lt('updated_at', cutoff);
+
+        const { data } = await API.db
+          .from('presence')
+          .select('user_id, name, shot_id, field')
+          .eq('video_id', videoId)
+          .neq('user_id', me.id);
+
+        return reply({ ok: true, people: data || [] });
+      },
+    },
+    {
+      test: /^\/api\/presence\/leave$/,
+      async run(m, body) {
+
+        const me = await API.Auth.user();
+
+        if (me) {
+          await API.db.from('presence').delete()
+            .eq('video_id', Number(body.video_id) || 0)
+            .eq('user_id', me.id);
+        }
+
+        return reply({ ok: true });
+      },
+    },
+
     /* ---------------- 進み具合の問い合わせ ---------------- */
     {
       test: /^\/api\/videos\/(\d+)\/status$/,
@@ -441,6 +501,10 @@
 
 
   /* ---------------- 補助 ---------------- */
+
+  /* これを過ぎたら「もういない」とみなす */
+  const ALIVE_MS = 20000;
+
 
   /* 結合してよい列。番号・キャプチャ・秒数は、横に固定して見せている
      都合で結合できない（ずれて表が崩れる） */

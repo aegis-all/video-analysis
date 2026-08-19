@@ -94,6 +94,8 @@
     + '<span class="project-info-actions">'
     + '<button type="button" class="project-edit" id="project-edit">編集</button>'
     + '<button type="button" class="project-copy" id="project-copy">コピーを作成</button>'
+    + '<button type="button" class="project-delete" id="project-delete"'
+    + ' title="この案件をまるごと削除します">削除</button>'
     + '</span>'
     + '</div>'
 
@@ -549,6 +551,73 @@
       Shell.toast('コピーできませんでした（' + err.message + '）', true);
       btn.disabled = false;
       btn.textContent = 'コピーを作成';
+    }
+  });
+
+
+
+  /* ------------------------------------------------------------
+     案件を削除する
+
+     動画・スクリーンショット・入力・作業時間まで、まとめて消える。
+     置き場のファイルも消すが、ほかの案件が同じものを見ている
+     （コピーや修正版）ときは残す。
+     ------------------------------------------------------------ */
+
+  document.getElementById('project-delete').addEventListener('click', async function (e) {
+
+    const btn = e.currentTarget;
+
+    if (!window.confirm(
+      'この案件を削除します。\n'
+      + '動画・スクリーンショット・入力した内容が、まとめて消えます。\n'
+      + '元に戻せません。')) {
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '削除中…';
+
+    try {
+
+      /* 画像を先に消す。案件を消したあとでは、どれが要らないか分からなくなる */
+      const shotPaths = [];
+
+      for (const v of videos) {
+        (await API.Shots.ofVideo(v.id)).forEach(function (s) {
+          if (s.storage_path) { shotPaths.push(s.storage_path); }
+        });
+      }
+
+      if (shotPaths.length) { await API.Files.remove('screenshots', shotPaths); }
+
+      /* 動画は、ほかの案件が同じものを見ていないときだけ消す */
+      const mine = videos.map(function (v) { return v.id; });
+
+      for (const v of videos) {
+
+        if (!v.storage_path) { continue; }
+
+        const { data: sharing } = await API.db
+          .from('videos').select('id')
+          .eq('storage_path', v.storage_path)
+          .not('id', 'in', '(' + mine.join(',') + ')');
+
+        if (!sharing || !sharing.length) {
+          await API.Files.remove('videos', [v.storage_path]);
+        }
+
+        await Detection.drop(v.id);
+      }
+
+      await API.Projects.remove(project.id);
+
+      location.href = 'index.html';
+
+    } catch (err) {
+      Shell.toast('削除できませんでした（' + err.message + '）', true);
+      btn.disabled = false;
+      btn.textContent = '削除';
     }
   });
 

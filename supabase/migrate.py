@@ -109,6 +109,21 @@ class Supabase:
             extra={"x-upsert": "true"},
         )
 
+    def select(self, table: str, columns: str = "*") -> list:
+        return self._request("GET", f"/rest/v1/{table}?select={columns}") or []
+
+    def upsert(self, table: str, rows: list) -> None:
+        """同じものが既にあれば上書きする。何度流しても同じ結果になる。"""
+        if not rows:
+            return
+
+        self._request(
+            "POST",
+            f"/rest/v1/{table}",
+            body=rows,
+            extra={"Prefer": "resolution=merge-duplicates,return=minimal"},
+        )
+
     def patch(self, table: str, where: str, fields: dict) -> None:
         self._request("PATCH", f"/rest/v1/{table}?{where}", body=fields)
 
@@ -214,6 +229,65 @@ def summary(conn) -> None:
     print("  ・いまの4名を Supabase Auth に招待（メールアドレスは同じもの）")
 
 
+def send_rest(conn, sb, project_map: dict, user_map: dict) -> None:
+    """作業時間・ガイドライン・設定を移す。
+
+    ここは何度流しても同じ結果になるようにしてある。
+    移している最中に公開サイトを誰かが開いていると、その画面が
+    作業時間を書き込むので、そのままだと「もうある」と言われて止まる。
+    """
+    print()
+    print("― のこり ―")
+
+    # まず作業時間を空にする。画面から書かれたものが混ざっていることがある
+    sb.delete_all("work_time")
+
+    # 同じ組み合わせが2行あっても足し合わせて1行にする
+    merged: dict = {}
+
+    for w in rows(conn, "SELECT * FROM work_time"):
+
+        uid = user_map.get(w["user_id"])
+
+        if not uid or w["project_id"] not in project_map:
+            continue
+
+        key = (project_map[w["project_id"]], uid, w["side"], w["day"])
+        merged[key] = merged.get(key, 0) + (w["seconds"] or 0)
+
+    work = [
+        {"project_id": k[0], "user_id": k[1], "side": k[2], "day": k[3],
+         "seconds": v}
+        for k, v in merged.items()
+    ]
+
+    sb.upsert("work_time", work)
+    print(f"  作業時間     {len(work)} 行")
+
+    sb.delete_all("guidelines")
+
+    guides = [
+        {
+            "text": g["text"], "source": g["source"] or "",
+            "seen": g["seen"] or 0, "status": g["status"] or "active",
+            "sort_order": g["sort_order"] or 0,
+            "created_by": user_map.get(g["created_by"]),
+        }
+        for g in rows(conn, "SELECT * FROM guidelines")
+    ]
+
+    sb.insert("guidelines", guides)
+    print(f"  ガイドライン {len(guides)} 行")
+
+    prefs = [
+        {"key": r["key"], "value": r["value"]}
+        for r in rows(conn, "SELECT * FROM settings")
+    ]
+
+    sb.upsert("settings", prefs)
+    print(f"  設定         {len(prefs)} 行")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="移す量を見るだけ")
@@ -223,6 +297,9 @@ def main() -> int:
                     help="Supabase 側を空にしてから入れ直す")
     ap.add_argument("--max-upload-mb", type=int, default=45,
                     help="これを超える動画は圧縮してから送る（既定 45MB）")
+    ap.add_argument("--rest-only", action="store_true",
+                    help="作業時間・ガイドライン・設定だけを入れ直す"
+                         "（案件・動画・画像は送り直さない）")
     args = ap.parse_args()
 
     if not DB_PATH.is_file():
@@ -261,6 +338,43 @@ def main() -> int:
         for table, column, sql in missing:
             print(f"  {table}.{column} がありません → supabase/{sql}")
         return 1
+
+    # ---- のこりだけ入れ直す ------------------------------------------------
+    # 大きいファイルを送り直さずに、途中で止まったところから続ける。
+    if args.rest_only:
+
+        print("― 案件を slug で結びつけます ―")
+
+        by_slug = {
+            r["slug"]: r["id"]
+            for r in sb.select("projects", "id,slug")
+            if r["slug"]
+        }
+
+        project_map = {}
+
+        for p in rows(conn, "SELECT id, name, slug FROM projects"):
+            if p["slug"] in by_slug:
+                project_map[p["id"]] = by_slug[p["slug"]]
+            else:
+                print(f"  --  {p['name']} は向こうに見つかりません")
+
+        print(f"  {len(project_map)} 件を結びつけました")
+
+        remote = {u.get("email", "").lower(): u["id"] for u in sb.list_users()}
+
+        user_map = {
+            u["id"]: remote[(u["username"] or "").lower()]
+            for u in rows(conn, "SELECT id, username FROM users")
+            if (u["username"] or "").lower() in remote
+        }
+
+        send_rest(conn, sb, project_map, user_map)
+        conn.close()
+
+        print()
+        print("  入れ直しました。")
+        return 0
 
     if args.reset:
         print("― 入れ直しのため、Supabase 側を空にします ―")
@@ -433,47 +547,7 @@ def main() -> int:
     sb.insert("cell_merges", merges)
     print(f"  結合したセル {len(merges)} 件")
 
-    # ---- 作業時間・設定・ガイドライン ---------------------------------------
-    print()
-    print("― のこり ―")
-
-    work = []
-
-    for w in rows(conn, "SELECT * FROM work_time"):
-        uid = user_map.get(w["user_id"])
-        if not uid or w["project_id"] not in project_map:
-            continue
-        work.append({
-            "project_id": project_map[w["project_id"]],
-            "user_id": uid,
-            "side": w["side"],
-            "day": w["day"],
-            "seconds": w["seconds"],
-        })
-
-    sb.insert("work_time", work)
-    print(f"  作業時間     {len(work)} 行")
-
-    guides = [
-        {
-            "text": g["text"], "source": g["source"] or "",
-            "seen": g["seen"] or 0, "status": g["status"] or "active",
-            "sort_order": g["sort_order"] or 0,
-            "created_by": user_map.get(g["created_by"]),
-        }
-        for g in rows(conn, "SELECT * FROM guidelines")
-    ]
-
-    sb.insert("guidelines", guides)
-    print(f"  ガイドライン {len(guides)} 行")
-
-    prefs = [
-        {"key": s["key"], "value": s["value"]}
-        for s in rows(conn, "SELECT * FROM settings")
-    ]
-
-    sb.insert("settings", prefs)
-    print(f"  設定         {len(prefs)} 行")
+    send_rest(conn, sb, project_map, user_map)
 
     conn.close()
 

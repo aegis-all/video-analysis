@@ -131,6 +131,8 @@ if (root) {
 
   initCellMerge();
 
+  initPresence();
+
   initInlineInfo();
 
   initWorkTime();
@@ -5379,7 +5381,9 @@ function initCellMerge() {
 
     const cell = findCell(e.target);
 
-    if (!cell) {
+    /* 番号・キャプチャ・秒数は横に固定して見せているので結合できない。
+       選べてしまうと、できないことを選ばせることになる */
+    if (!cell || !fieldOf(cell.td)) {
       return;
     }
 
@@ -5451,6 +5455,11 @@ function initCellMerge() {
       }
     }
 
+    /* 「元に戻す」で戻せるよう、まとめる前の中身を覚えておく */
+    const before = cells.map(function (cell) {
+      return { shot_id: cell.shot_id, field: cell.field, value: readCell(cell) };
+    });
+
     runBtn.disabled = true;
 
     fetch('/api/videos/' + videoId + '/merges', {
@@ -5488,6 +5497,8 @@ function initCellMerge() {
         applyMerges();
         clear();
 
+        offerUndo(before, { shot_id: data.shot_id, field: data.field });
+
         toast(cells.length + ' つのセルを結合しました');
       })
       .catch(function (err) {
@@ -5499,8 +5510,14 @@ function initCellMerge() {
   });
 
 
-  /** 画面側の入力欄にも書き戻す */
-  function writeCell(cell, value) {
+  /**
+   * 画面側の入力欄にも書き戻し、そのまま保存する。
+   *
+   * raw を立てると、素材欄の中身をそのまま入れる。
+   * 戻すときは元の見た目のまま返したいので、
+   * 改行を <br> に置き換える手当てをしない。
+   */
+  function writeCell(cell, value, raw) {
 
     const tr = tbody.querySelector('tr[data-shot-row="' + cell.shot_id + '"]');
 
@@ -5516,12 +5533,109 @@ function initCellMerge() {
 
     if (box.tagName === 'TEXTAREA') {
       box.value = value;
-      delete box.dataset.saved;
-      box.dispatchEvent(new Event('input', { bubbles: true }));
+    } else if (raw) {
+      box.innerHTML = value;
     } else {
-      box.innerHTML = value.replace(/\n/g, '<br>');
+      box.innerHTML = String(value).replace(/\n/g, '<br>');
     }
+
+    delete box.dataset.saved;
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+
+    saveField(box);
   }
+
+  /** そのセルの中身を読む */
+  function readCell(cell) {
+
+    const tr = tbody.querySelector('tr[data-shot-row="' + cell.shot_id + '"]');
+
+    if (!tr) { return ''; }
+
+    const box = tr.querySelector('[data-field="' + cell.field + '"]');
+
+    if (!box) { return ''; }
+
+    return box.tagName === 'TEXTAREA' ? box.value : box.innerHTML;
+  }
+
+
+  /* ------------------------------------------------------------
+     結合したすぐあとの「元に戻す」
+
+     結合を解除するだけだと、寄せた中身は左上に残ったままになる。
+     まとめる前の中身をそれぞれのセルに書き戻して、
+     押す前の状態にそっくり返す。
+
+     結合したあとに中身を書き直していた場合は、その書き直しも
+     消えてしまう。だから出しっぱなしにはせず、しばらくで引っ込める。
+     ------------------------------------------------------------ */
+
+  const undoBar = document.getElementById('merge-undo');
+
+  let undoTimer = null;
+
+  function offerUndo(before, anchor) {
+
+    if (!undoBar) { return; }
+
+    clearTimeout(undoTimer);
+
+    undoBar.querySelector('.row-undo-text').textContent =
+      before.length + ' つのセルを結合しました';
+
+    undoBar.hidden = false;
+
+    const button = undoBar.querySelector('.row-undo-button');
+
+    /* 前に付けた仕掛けが残らないよう、丸ごと差し替える */
+    const fresh = button.cloneNode(true);
+    button.replaceWith(fresh);
+
+    fresh.addEventListener('click', function () {
+      fresh.disabled = true;
+      undoMerge(before, anchor, fresh);
+    });
+
+    undoTimer = setTimeout(function () { undoBar.hidden = true; }, 30000);
+  }
+
+  function undoMerge(before, anchor, button) {
+
+    fetch('/api/videos/' + videoId + '/merges/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cells: [anchor] }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+
+        if (!data.ok) {
+          throw new Error(data.error || '戻せませんでした');
+        }
+
+        merges = merges.filter(function (m) {
+          return !(m.shot_id === anchor.shot_id && m.field === anchor.field);
+        });
+
+        applyMerges();
+
+        /* まとめる前の中身をそれぞれに書き戻す */
+        before.forEach(function (cell) {
+          writeCell(cell, cell.value, true);
+        });
+
+        undoBar.hidden = true;
+        clearTimeout(undoTimer);
+
+        toast('結合する前に戻しました');
+      })
+      .catch(function (err) {
+        toast('戻せませんでした（' + err.message + '）', true);
+        button.disabled = false;
+      });
+  }
+
 
 
   /* ------------------------------------------------------------
@@ -5589,4 +5703,175 @@ function initCellMerge() {
 
 
   applyMerges();
+}
+
+
+/* ============================================================
+   いま誰がどのセルを見ているか
+
+   数秒おきに「自分はここにいる」と伝え、ついでにほかの人の
+   居場所を受け取る。受け取った人の名前を、そのセルの角に出す。
+
+   行き来を1回で済ませたいので、送るのと受け取るのが同じ口。
+   しばらく音沙汰のない人は、向こう側で捨てられる。
+   ============================================================ */
+
+function initPresence() {
+
+  const tbody = document.getElementById('rows');
+
+  if (!root || !tbody) {
+    return;
+  }
+
+  const videoId = root.dataset.videoId;
+
+  if (!videoId) {
+    return;
+  }
+
+  /* 名前の色。人ごとに変えて、見分けが付くようにする */
+  const COLORS = 8;
+
+  function colorOf(id) {
+    const text = String(id);
+    let n = 0;
+    for (let i = 0; i < text.length; i += 1) {
+      n = (n * 31 + text.charCodeAt(i)) % 9973;
+    }
+    return n % COLORS;
+  }
+
+  let here = { shot_id: 0, field: '' };
+  let timer = null;
+  let sending = false;
+
+  /* どのセルにいるかは「最後に触れた入力欄」で決める */
+  tbody.addEventListener('focusin', function (e) {
+
+    const box = e.target.closest('[data-field][data-shot]');
+
+    if (!box) {
+      return;
+    }
+
+    const next = { shot_id: Number(box.dataset.shot), field: box.dataset.field };
+
+    if (next.shot_id === here.shot_id && next.field === here.field) {
+      return;
+    }
+
+    here = next;
+
+    /* 動いたことはすぐ伝えたい */
+    ping();
+  });
+
+  function schedule(ms) {
+    clearTimeout(timer);
+    timer = setTimeout(ping, ms);
+  }
+
+  function ping() {
+
+    /* 裏に回っている画面から送り続けても意味がない */
+    if (sending || document.hidden) {
+      schedule(4000);
+      return;
+    }
+
+    sending = true;
+
+    fetch('/api/presence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        video_id: videoId, shot_id: here.shot_id, field: here.field,
+      }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.ok) { draw(d.people || []); }
+      })
+      .catch(function () { /* つながらないときは黙って次を待つ */ })
+      .then(function () {
+        sending = false;
+        schedule(4000);
+      });
+  }
+
+  function draw(people) {
+
+    tbody.querySelectorAll('.is-watched').forEach(function (td) {
+      td.classList.remove('is-watched');
+    });
+
+    tbody.querySelectorAll('.presence-mark').forEach(function (el) {
+      el.remove();
+    });
+
+    /* 同じセルに何人かいることがあるので、まとめてから出す */
+    const groups = new Map();
+
+    people.forEach(function (who) {
+
+      if (!who.shot_id || !who.field) {
+        return;
+      }
+
+      const key = who.shot_id + ' ' + who.field;
+
+      if (!groups.has(key)) { groups.set(key, []); }
+
+      groups.get(key).push(who);
+    });
+
+    groups.forEach(function (list, key) {
+
+      const parts = key.split(' ');
+
+      const tr = tbody.querySelector('tr[data-shot-row="' + parts[0] + '"]');
+
+      if (!tr) { return; }
+
+      const box = tr.querySelector('[data-field="' + parts[1] + '"]');
+
+      if (!box) { return; }
+
+      const td = box.closest('td');
+
+      if (!td || td.classList.contains('is-covered')) { return; }
+
+      td.classList.add('is-watched');
+
+      const mark = document.createElement('span');
+      mark.className = 'presence-mark presence-c' + colorOf(list[0].user_id);
+      mark.textContent = list.length > 1
+        ? list[0].name + ' ほか' + (list.length - 1) + '人'
+        : list[0].name;
+      mark.title = list.map(function (w) { return w.name; }).join('、')
+        + ' がここを見ています';
+
+      td.appendChild(mark);
+    });
+  }
+
+  function leave() {
+    try {
+      fetch('/api/presence/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ video_id: videoId }),
+        keepalive: true,
+      });
+    } catch (err) { /* 閉じる途中なので、届かなくてもかまわない */ }
+  }
+
+  window.addEventListener('pagehide', leave);
+
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { ping(); }
+  });
+
+  ping();
 }

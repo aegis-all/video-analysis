@@ -5552,3 +5552,75 @@ button.row-insert,
 .sheet .c-revised {
     min-width: 150px;
 }
+
+
+/* =========================================================
+   案件を削除する
+   ========================================================= */
+
+.project-delete {
+    padding: 4px 12px;
+
+    background: #fdecec;
+    border: 1px solid #f3c9c9;
+    border-radius: 7px;
+
+    color: #9b1c1c;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease;
+}
+
+.project-delete:hover {
+    background: #fbdada;
+    border-color: #e9adad;
+}
+
+
+/* =========================================================
+   いま誰がどのセルを見ているか
+
+   名前はセルの右上に小さく出す。
+   入力の邪魔をしないよう、押しても素通りさせる。
+   ========================================================= */
+
+.sheet td.is-watched {
+    position: relative;
+    box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.presence-mark {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    z-index: 6;
+
+    max-width: 90%;
+    padding: 1px 7px;
+
+    border-radius: 0 4px 0 6px;
+
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    pointer-events: none;
+}
+
+.presence-c0 { background: #2563eb; }
+.presence-c1 { background: #0f766e; }
+.presence-c2 { background: #b45309; }
+.presence-c3 { background: #9333ea; }
+.presence-c4 { background: #be123c; }
+.presence-c5 { background: #15803d; }
+.presence-c6 { background: #0369a1; }
+.presence-c7 { background: #7c2d12; }

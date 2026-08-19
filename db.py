@@ -180,6 +180,26 @@ CREATE INDEX IF NOT EXISTS cell_merges_video_idx
 
 CREATE UNIQUE INDEX IF NOT EXISTS cell_merges_cell_key
     ON cell_merges (shot_id, field);
+
+
+/*
+   いま誰がどのセルを見ているか。
+
+   数秒ごとに書き換えられる、その場かぎりの情報。
+   古くなった行は読むときに捨てるので、貯め込まない。
+*/
+CREATE TABLE IF NOT EXISTS presence (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_id   INTEGER NOT NULL,
+    user_id    INTEGER NOT NULL,
+    shot_id    INTEGER NOT NULL DEFAULT 0,
+    field      TEXT    NOT NULL DEFAULT '',
+    name       TEXT    NOT NULL DEFAULT '',
+    updated_at TEXT    NOT NULL DEFAULT ''
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS presence_who
+    ON presence (video_id, user_id);
 """
 
 

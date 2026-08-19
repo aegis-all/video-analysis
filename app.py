@@ -11,6 +11,7 @@ import socket
 import sys
 import threading
 import uuid
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from flask import (
@@ -3338,6 +3339,183 @@ def delete_video(video_id: int):
 # ============================================================
 # スクショ内容の自動保存
 # ============================================================
+
+# ============================================================
+# 案件の削除
+#
+# 動画・スクリーンショット・入力・作業時間まで、まとめて消える。
+# 画像はゴミ箱へ移すだけにしておく（行の削除と同じ扱い）。
+# 動画ファイルは、ほかの案件が同じものを見ていなければ消す。
+# ============================================================
+
+@app.post("/projects/<int:project_id>/delete")
+def delete_project(project_id: int):
+
+    project = db.query(
+        "SELECT * FROM projects WHERE id = ?",
+        (project_id,),
+        one=True,
+    )
+
+    if project is None:
+        abort(404)
+
+    videos = db.query(
+        "SELECT * FROM videos WHERE project_id = ?",
+        (project_id,),
+    )
+
+    moved = 0
+
+    for video in videos:
+
+        for shot in db.query(
+            "SELECT id, image_path FROM screenshots WHERE video_id = ?",
+            (video["id"],),
+        ):
+
+            path = shot["image_path"]
+
+            if not path or _is_shared_image(path, shot["id"]):
+                continue
+
+            if _move_to_trash(path, shot["id"]):
+                moved += 1
+
+    db.execute(
+        "DELETE FROM projects WHERE id = ?",
+        (project_id,),
+    )
+
+    # 「コピーを作成」や修正版は、元と同じ動画ファイルを見ている。
+    # まだ使っているところがあれば、ファイルは消さない。
+    for video in videos:
+
+        path = video["file_path"]
+
+        if not path:
+            continue
+
+        still_used = db.query(
+            "SELECT COUNT(*) AS n FROM videos WHERE file_path = ?",
+            (path,),
+            one=True,
+        )
+
+        if still_used and still_used["n"]:
+            continue
+
+        try:
+            Path(path).unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    logging.getLogger("app").info(
+        "案件を削除しました: %s（%s / 動画%s本 / 画像%s枚をゴミ箱へ）",
+        project_id, project["name"], len(videos), moved,
+    )
+
+    return redirect(url_for("index"))
+
+
+# ============================================================
+# いま誰がどのセルを見ているか
+#
+# 数秒おきに「自分はここにいる」と伝え、ついでに
+# ほかの人の居場所を受け取る。行き来を1回で済ませたいので
+# 送るのと受け取るのを同じ口にしてある。
+#
+# しばらく音沙汰のない人は、その場で捨てる。
+# ============================================================
+
+# これを過ぎたら「もういない」とみなす（秒）
+PRESENCE_ALIVE_SEC = 20
+
+
+@app.post("/api/presence")
+def presence():
+
+    user = auth.current_user()
+
+    if user is None:
+        return jsonify(ok=False, error="ログインが必要です。"), 401
+
+    data = request.get_json(silent=True) or {}
+
+    video_id = int(data.get("video_id") or 0)
+
+    if not video_id:
+        return jsonify(ok=True, people=[])
+
+    shot_id = int(data.get("shot_id") or 0)
+    field = str(data.get("field") or "")[:40]
+
+    now = db.now()
+
+    # 自分の居場所を書く。すでにあれば書き換える
+    db.execute(
+        """
+        INSERT INTO presence (video_id, user_id, shot_id, field, name, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT (video_id, user_id) DO UPDATE SET
+            shot_id = excluded.shot_id,
+            field = excluded.field,
+            name = excluded.name,
+            updated_at = excluded.updated_at
+        """,
+        (video_id, user["id"], shot_id, field,
+         user["display_name"] or user["username"], now),
+    )
+
+    cutoff = (
+        datetime.now() - timedelta(seconds=PRESENCE_ALIVE_SEC)
+    ).strftime("%Y-%m-%d %H:%M:%S")
+
+    # 古くなった行はここで捨てる。貯め込まないため
+    db.execute(
+        "DELETE FROM presence WHERE updated_at < ?",
+        (cutoff,),
+    )
+
+    people = [
+        {
+            "user_id": r["user_id"],
+            "name": r["name"],
+            "shot_id": r["shot_id"],
+            "field": r["field"],
+        }
+        for r in db.query(
+            """
+            SELECT * FROM presence
+            WHERE video_id = ?
+              AND user_id <> ?
+            ORDER BY user_id
+            """,
+            (video_id, user["id"]),
+        )
+    ]
+
+    return jsonify(ok=True, people=people)
+
+
+@app.post("/api/presence/leave")
+def presence_leave():
+    """画面を閉じたときに、自分の居場所を消す。"""
+
+    user = auth.current_user()
+
+    if user is None:
+        return jsonify(ok=True)
+
+    data = request.get_json(silent=True) or {}
+
+    db.execute(
+        "DELETE FROM presence WHERE video_id = ? AND user_id = ?",
+        (int(data.get("video_id") or 0), user["id"]),
+    )
+
+    return jsonify(ok=True)
+
 
 @app.post("/api/projects/<int:project_id>/columns")
 def update_columns(project_id: int):
