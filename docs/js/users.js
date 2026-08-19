@@ -20,18 +20,32 @@
 
   async function render() {
 
-    const { data, error } = await API.db
-      .from('profiles')
-      .select('id, display_name, created_at')
-      .order('created_at');
+    /* approved はあとから足す列なので、まだ無いこともある。
+       そのときは列を外して読み直す */
+    let data = null;
+    let error = null;
+    let hasApproved = true;
 
-    if (error) {
+    for (const extra of [', approved', '']) {
+
+      const r = await API.db
+        .from('profiles')
+        .select('id, display_name, created_at' + extra)
+        .order('created_at');
+
+      if (!r.error) { data = r.data; hasApproved = !!extra; break; }
+
+      error = r.error;
+      if (!extra) { break; }
+    }
+
+    if (!data) {
       page.innerHTML = '<section class="card"><p>'
-        + esc(error.message) + '</p></section>';
+        + esc(error ? error.message : '読み込めませんでした。') + '</p></section>';
       return;
     }
 
-    const users = data || [];
+    const users = data;
 
     page.innerHTML =
 
@@ -52,6 +66,8 @@
           + esc((u.display_name || '?').slice(0, 1).toUpperCase()) + '</span>'
           + '<strong>' + esc(u.display_name || '未設定') + '</strong>'
           + (mine ? ' <span class="database-pill pill-c7">自分</span>' : '')
+          + (hasApproved && !u.approved
+            ? ' <span class="database-pill pill-c3">未承認</span>' : '')
           + '</span></td>'
           + '<td class="database-date">' + Shell.stamp(u.created_at) + '</td>'
           + '<td class="users-actions">'
@@ -77,6 +93,11 @@
       + '招待された人は、届いたメールのリンクからパスワードを決めて入れます。</p>'
       + '<p class="note-hint">'
       + 'ログインできなくなった場合も、同じ画面からパスワードの再設定ができます。'
+      + '</p>'
+      + '<p class="note-hint">'
+      + '招いた人は、はじめは<b>未承認</b>で、案件が何も見えません。'
+      + 'Table Editor → profiles → その人の approved に印を付けると使えるようになります。'
+      + '（知らない人が勝手に登録しても中身を見られないようにするための仕組みです）'
       + '</p>'
       + '</section>';
 

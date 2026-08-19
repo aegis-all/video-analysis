@@ -1708,7 +1708,9 @@ body.page-project .project {
 
 .database-filters[hidden],
 .database-sort-panel[hidden],
-.filter-panel[hidden] {
+.filter-panel[hidden],
+.row-delete-bar[hidden],
+.row-undo[hidden] {
     display: none;
 }
 
